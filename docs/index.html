@@ -115,6 +115,11 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     <p class="sub">معاملات نهنگ‌های Hyperliquid، سابقه‌ی هرکدوم و کپی مجازی. ربات روی GitHub هر ۵ دقیقه خودش اجرا می‌شه، حتی وقتی این صفحه بسته است. فقط داده‌ی عمومی می‌خونه و هیچ معامله‌ی واقعی انجام نمی‌ده.</p>
   </header>
 
+  <div class="row" id="netbar">
+    <button class="btn primary" id="refresh" type="button">ریفرش</button>
+    <span class="chip" id="net"><i></i><span id="net-t">...</span></span>
+  </div>
+
   <div class="tabs" role="tablist">
     <button role="tab" id="t-feed" aria-selected="true">فید</button>
     <button role="tab" id="t-wallets" aria-selected="false">سابقه‌ی نهنگ‌ها</button>
@@ -307,15 +312,42 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     });
     firstLoad = false;
   }
+  var lastOk = 0;
+  function tfetch(url, opts, ms) {
+    var ac = typeof AbortController !== "undefined" ? new AbortController() : null, tm = ac ? setTimeout(function () { ac.abort(); }, ms || 8000) : null;
+    opts = opts || {}; if (ac) opts.signal = ac.signal;
+    return fetch(url, opts).then(function (r) { clearTimeout(tm); return r; }, function (e) { clearTimeout(tm); throw e; });
+  }
+  function updateNet() {
+    var n = $("net"), tx = $("net-t"); if (!n) return;
+    var off = navigator.onLine === false || !!loadErr;
+    n.className = "chip " + (off ? "err" : "ok");
+    tx.textContent = off ? "کانکت نیست" : "متصل" + (lastOk ? " · " + ago(lastOk) : "");
+  }
   function load() {
-    fetch("data.json?t=" + Date.now(), { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
-      .then(function (d) { ingest(d); loadErr = null; renderAll(); })
-      .catch(function (e) { loadErr = String((e && e.message) || e); renderAll(); });
+    return tfetch("data.json?t=" + Date.now(), { cache: "no-store" }, 10000).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(function (d) { ingest(d); loadErr = null; lastOk = Date.now(); renderAll(); })
+      .catch(function (e) { loadErr = navigator.onLine === false ? "offline" : String((e && e.message) || e); renderAll(); })
+      .then(updateNet);
+  }
+  function pullLive() {
+    var jobs = [{ type: "allMids" }, { type: "allMids", dex: "xyz" }].map(function (b) {
+      return tfetch("https://api.hyperliquid.xyz/info", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) })
+        .then(function (r) { return r.json(); }).then(function (o) { Object.keys(o).forEach(function (k) { var v = Number(o[k]); if (v > 0) marks[k] = { px: v, live: true }; }); }).catch(function () {});
+    });
+    jobs.push(tfetch("https://data-api.binance.vision/api/v3/ticker/price?symbol=PAXGUSDT").then(function (r) { return r.json(); })
+      .then(function (o) { var v = Number(o && o.price); if (v > 0) marks.PAXG = { px: v, live: true }; }).catch(function () {}));
+    return Promise.all(jobs).then(function () { if (DATA) renderAll(); });
+  }
+  function refreshNow() {
+    var btn = $("refresh"); btn.disabled = true; btn.textContent = "در حال ریفرش...";
+    $("net-t").textContent = "در حال اتصال...";
+    return Promise.all([load(), pullLive()]).then(function () { btn.disabled = false; btn.textContent = "ریفرش"; updateNet(); });
   }
 
   function copiedBy(g) {
     var side = sideOf(g.dir); if (!side || !isOpenDir(g.dir)) return null;
-    function hit(p) { return p.tag === g.tag && p.coin === g.coin && p.side === side && p.opened_at >= g.first - 60000 && p.opened_at <= g.last + 60000; }
+    function hit(p) { return p.tag === g.tag && (p.src || p.coin) === g.coin && p.side === side && p.opened_at >= g.first - 60000 && p.opened_at <= g.last + 60000; }
     if ((DATA.open || []).some(hit)) return { closed: false };
     if ((DATA.closed || []).some(hit)) return { closed: true };
     return null;
@@ -329,9 +361,13 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
   function manualCopy(g) {
     var side = sideOf(g.dir), S = DATA.settings, m = marks[g.coin], base = m && m.px > 0 ? m.px : g.usd / g.size, SL = 0.0003;
     if (!side || M.open.some(function (p) { return p.srcId === g.id; })) return;
-    M.open.push({ id: M.seq++, srcId: g.id, tag: g.tag, addr: g.addr, coin: g.coin, side: side, entry: side === "long" ? base * (1 + SL) : base * (1 - SL), margin: S.margin, lev: S.leverage, openedAt: Date.now(), usedMark: !!(m && m.px > 0) });
+    var gold = /gold/i.test(g.coin), inst = gold ? "PAXG" : g.coin;
+    if (gold && side === "short") { MSG[g.id] = "PAXG شورت ندارد"; alert_(g, "PAXG (طلای بایننس) شورت ندارد؛ فقط خرید طلا کپی می‌شه."); return; }
+    if (gold) { m = marks.PAXG; base = m && m.px > 0 ? m.px : g.usd / g.size; }
+    M.open.push({ id: M.seq++, srcId: g.id, tag: g.tag, addr: g.addr, coin: inst, src: g.coin, side: side, entry: side === "long" ? base * (1 + SL) : base * (1 - SL), margin: gold ? (S.gold_margin || 100) : S.margin, lev: gold ? 1 : S.leverage, openedAt: Date.now(), usedMark: !!(m && m.px > 0) });
     saveM(); renderAll();
   }
+  function alert_(g, text) { var b = $("banner"); b.hidden = false; $("banner-text").textContent = text; setTimeout(function () { renderAll(); }, 4000); }
   function closeManual(p, px) {
     var n = p.margin * p.lev, d = p.side === "long" ? 1 : -1, SL = 0.0003, ex = p.side === "long" ? px * (1 - SL) : px * (1 + SL);
     var pnl = Math.max(-p.margin, n * d * (ex - p.entry) / p.entry - n * 0.00045 * 2);
@@ -340,7 +376,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
   }
   function whaleClosedAfter(p) {
     var w = W[p.addr]; if (!w) return null;
-    var cg = w.groups.filter(function (g) { return g.coin === p.coin && isCloseDir(g.dir) && sideOf(g.dir) === p.side && g.last > p.openedAt; }).sort(function (a, b) { return b.last - a.last; })[0];
+    var cg = w.groups.filter(function (g) { return g.coin === (p.src || p.coin) && isCloseDir(g.dir) && sideOf(g.dir) === p.side && g.last > p.openedAt; }).sort(function (a, b) { return b.last - a.last; })[0];
     return cg ? { px: cg.usd / cg.size } : null;
   }
   function renderManual() {
@@ -362,13 +398,6 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
       var s = el("p", "sub"); s.appendChild(document.createTextNode("بسته‌شده‌های دستی: " + M.closed.length + " · مجموع ")); s.appendChild(el("b", "num " + (tot >= 0 ? "up" : "down"), (tot >= 0 ? "+" : "-") + money(Math.abs(tot)).replace("-", ""))); box.appendChild(s);
       M.closed.slice(0, 10).forEach(function (t) { box.appendChild(el("p", "sub num", t.coin + " " + (t.side === "long" ? "لانگ" : "شورت") + " · " + price(t.entry) + " ← " + price(t.exit) + " · " + (t.pnl >= 0 ? "+" : "-") + money(Math.abs(t.pnl)).replace("-", "") + " · از " + t.tag)); });
     }
-  }
-  function pullLive() {
-    var ok = 0;
-    [{ type: "allMids" }, { type: "allMids", dex: "xyz" }].forEach(function (b) {
-      fetch("https://api.hyperliquid.xyz/info", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) })
-        .then(function (r) { return r.json(); }).then(function (o) { Object.keys(o).forEach(function (k) { var v = Number(o[k]); if (v > 0) marks[k] = { px: v, live: true }; }); live = true; if (DATA) renderAll(); }).catch(function () {});
-    });
   }
   function autoText(g, d) {
     var side = sideOf(g.dir), v = verdict(d, g), rk = riskOf(d, g), sc = d.score, pro = [], con = [], cs = d.coins[g.coin + "|" + side], mk = marks[g.coin], avgPx = g.usd / g.size;
@@ -402,7 +431,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     renderFeed(SETS.whale, "feed", function (g) { return g.usd >= minUsd && g.last >= wf && (!onlyOpen || isOpenDir(g.dir)); });
     renderFeed(SETS.hw, "hw-feed", function () { return true; });
     renderFeed(SETS.gold, "gold-feed", function (g) { return /gold/i.test(g.coin); });
-    renderWallets(SETS.whale, "wallets"); renderWallets(SETS.hw, "hw-wallets"); renderWallets(SETS.gold, "gold-wallets"); renderPaper(); renderManual();
+    renderWallets(SETS.whale, "wallets"); renderWallets(SETS.hw, "hw-wallets"); renderWallets(SETS.gold, "gold-wallets"); renderPaper(); renderManual(); updateNet();
   }
   function renderBanner() {
     var strip = $("strip"), banner = $("banner"), txt = $("banner-text"); strip.textContent = "";
@@ -521,7 +550,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     var closed = DATA.closed || [], wins = closed.filter(function (t) { return t.pnl > 0; }).length, used = (DATA.open || []).reduce(function (s, p) { return s + p.margin; }, 0);
     stat(ps, "بسته‌شده (۶۰ تای آخر)", String(closed.length)); stat(ps, "وین‌ریت", closed.length ? Math.round(100 * wins / closed.length) + "٪" : "—");
     stat(ps, "موجودی بسته‌ها", money(DATA.balance)); stat(ps, "آزاد برای کپی", money(Math.max(0, DATA.balance - used)));
-    $("p-rules").textContent = "ربات خودش و بدون دکمه کپی می‌کنه: هر ورودِ هر کدوم از ۱۱ کیف‌پول که حجمش از " + usd(S.min_usd) + " بیشتر باشه، با مارجین " + money(S.margin) + " و لوریج " + S.leverage + "x و حداکثر " + S.max_open + " پوزیشن هم‌زمان. ورود با قیمت فعلی و ۰٫۰۳٪ لغزش بدتر، کارمزد ۰٫۰۴۵٪ هر طرف، تصفیه در ۹۰٪ ضرر مارجین. وقتی نهنگ کل پوزیشنش رو بست، پوزیشن مجازی هم بسته می‌شه. این عددها داخل فایل config.json هستن.";
+    $("p-rules").textContent = "ربات خودش و بدون دکمه کپی می‌کنه: هر ورودِ هر کدوم از ۱۱ کیف‌پول که حجمش از " + usd(S.min_usd) + " بیشتر باشه، با مارجین " + money(S.margin) + " و لوریج " + S.leverage + "x و حداکثر " + S.max_open + " پوزیشن هم‌زمان. ورود با قیمت فعلی و ۰٫۰۳٪ لغزش بدتر، کارمزد ۰٫۰۴۵٪ هر طرف، تصفیه در ۹۰٪ ضرر مارجین. وقتی نهنگ کل پوزیشنش رو بست، پوزیشن مجازی هم بسته می‌شه. طلا جداست: هر خریدِ طلای نهنگ‌ها روی PAXG (توکن طلای بایننس) با قیمت زنده‌ی بایننس، لوریج ۱x و مارجین " + money(S.gold_margin || 100) + " کپی می‌شه، حداکثر " + (S.gold_max || 3) + " پوزیشن هم‌زمان. PAXG شورت ندارد، پس شورت طلا کپی نمی‌شه. این عددها داخل فایل config.json هستن.";
     var ol = $("p-open"); ol.textContent = "";
     if (!(DATA.open || []).length) ol.appendChild(el("p", "empty", "هنوز ربات پوزیشنی باز نکرده. وقتی نهنگی ورود بزرگ داشته باشه خودکار اینجا میاد."));
     (DATA.open || []).forEach(function (p) {
@@ -586,7 +615,11 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     $("hw-note").textContent = "این لیست یک عکسِ ثابت از ۲۲ نوامبر ۲۰۲۶ است (از دیتای Coinversa) و خودش به‌روز نمی‌شه. ملیت یا هویت صاحب کیف‌پول (مثلاً ژاپنی بودن) از داده معلوم نیست. وین‌ریت و سود گذشته تضمین آینده نیست.";
   }
   renderHW();
-  load(); pullLive(); setInterval(pullLive, 30000); setInterval(load, 60000); setInterval(function () { if (DATA) renderAll(); }, 30000);
+  $("refresh").addEventListener("click", refreshNow);
+  window.addEventListener("online", refreshNow); window.addEventListener("offline", function () { updateNet(); });
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) refreshNow(); });
+  window.addEventListener("pageshow", function (e) { if (e.persisted) refreshNow(); });
+  updateNet(); load(); pullLive(); setInterval(pullLive, 30000); setInterval(load, 60000); setInterval(function () { if (DATA) renderAll(); }, 30000);
 })();
 </script>
 </body>

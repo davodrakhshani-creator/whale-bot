@@ -62,7 +62,29 @@ def marks_now():
                     pass
         except Exception as e:
             print("marks failed", p, e, file=sys.stderr)
+    px = binance_paxg()
+    if px:
+        m["PAXG"] = px
+    else:
+        g = next((v for k, v in m.items() if is_gold(k)), None)
+        if g:
+            m["PAXG"] = g  # fallback: Hyperliquid gold price
     return m
+
+
+def is_gold(coin):
+    return "gold" in coin.lower()
+
+
+def binance_paxg():
+    """Public Binance spot price of PAXG (gold-backed token). Read-only, no key."""
+    for host in ("data-api.binance.vision", "api.binance.com"):
+        try:
+            with urllib.request.urlopen(f"https://{host}/api/v3/ticker/price?symbol=PAXGUSDT", timeout=10) as r:
+                return float(json.loads(r.read().decode())["price"])
+        except Exception as e:
+            print("binance failed", host, e, file=sys.stderr)
+    return None
 
 
 def unreal(pos, mark):
@@ -87,17 +109,26 @@ def open_paper(st, cfg, w, coin, side, avg_px, usd, now, marks):
     if key in st["open"]:
         return
     S = cfg["settings"]
+    inst, margin, lev = coin, S["margin"], S["leverage"]
+    if is_gold(coin):
+        if side == "short":
+            log(st, now, f"{w['tag']} شورت طلا باز کرد (~${usd:,.0f}) ولی PAXG بایننس شورت ندارد؛ کپی نشد")
+            return
+        inst, margin, lev = "PAXG", S.get("gold_margin", 100), 1
+        if sum(1 for p in st["open"].values() if p["coin"] == "PAXG") >= S.get("gold_max", 3):
+            log(st, now, f"{w['tag']} خرید طلا (~${usd:,.0f}) ولی سقف {S.get('gold_max', 3)} پوزیشن هم‌زمان طلا پر بود (نهنگ‌های طلا هم‌زمان می‌خرند)")
+            return
     if len(st["open"]) >= S["max_open"]:
         log(st, now, f"{w['tag']} باز کرد {coin} {side} (~${usd:,.0f}) ولی سقف {S['max_open']} پوزیشن باز پر بود")
         return
-    if free_margin(st) < S["margin"]:
+    if free_margin(st) < margin:
         log(st, now, f"{w['tag']} باز کرد {coin} {side} (~${usd:,.0f}) ولی موجودی آزاد کافی نبود")
         return
-    base = marks.get(coin) or avg_px
+    base = marks.get(inst) or avg_px
     entry = base * (1 + SLIP) if side == "long" else base * (1 - SLIP)
-    st["open"][key] = {"key": key, "tag": w["tag"], "group": w.get("group", ""), "coin": coin, "side": side, "entry": entry,
-                       "whale_px": avg_px, "margin": S["margin"], "lev": S["leverage"], "opened_at": now, "whale_usd": usd}
-    log(st, now, f"کپی مجازی باز شد: {w['tag']} {coin} {'لانگ' if side == 'long' else 'شورت'} ورود {entry:.6g} (حجم نهنگ ~${usd:,.0f})")
+    st["open"][key] = {"key": key, "tag": w["tag"], "group": w.get("group", ""), "coin": inst, "src": coin, "side": side, "entry": entry,
+                       "whale_px": avg_px, "margin": margin, "lev": lev, "opened_at": now, "whale_usd": usd}
+    log(st, now, f"کپی مجازی باز شد: {w['tag']} {inst} {'لانگ' if side == 'long' else 'شورت'} ورود {entry:.6g} (حجم نهنگ ~${usd:,.0f})")
 
 
 def close_paper(st, key, px, now, reason):
@@ -144,7 +175,7 @@ def process_wallet(st, cfg, w, fills, marks, now):
             after = start + (sz if f.get("side") == "B" else -sz)
             key = f"{addr}|{coin}|{side}"
             if key in st["open"] and abs(after) * px < 20:
-                close_paper(st, key, px, t, "whale")
+                close_paper(st, key, (marks.get("PAXG") or px) if is_gold(coin) else px, t, "whale")
             continue
         pk = f"{addr}|{coin}|{side}"
         p = st["pending"].get(pk)
@@ -314,7 +345,7 @@ def build_data(st, cfg, marks, now, hist, feeds, prev):
         if u is not None:
             upl += u
         opens.append({**p, "mark": m, "upnl": u})
-    need = {p["coin"] for p in st["open"].values()}
+    need = {p["coin"] for p in st["open"].values()} | {"PAXG"}
     wallets = []
     old = {w["addr"]: w for w in (prev or {}).get("wallets", [])}
     for w in cfg["wallets"]:
