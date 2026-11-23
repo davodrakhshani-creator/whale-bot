@@ -78,9 +78,13 @@ def is_gold(coin):
 
 def binance_paxg():
     """Public Binance spot price of PAXG (gold-backed token). Read-only, no key."""
-    for host in ("data-api.binance.vision", "api.binance.com"):
+    # perpetual futures first (supports long AND short), then spot, then Hyperliquid gold as last fallback
+    for url in ("https://fapi.binance.com/fapi/v1/ticker/price?symbol=PAXGUSDT",
+                "https://data-api.binance.vision/api/v3/ticker/price?symbol=PAXGUSDT",
+                "https://api.binance.com/api/v3/ticker/price?symbol=PAXGUSDT"):
+        host = url.split("/")[2]
         try:
-            with urllib.request.urlopen(f"https://{host}/api/v3/ticker/price?symbol=PAXGUSDT", timeout=10) as r:
+            with urllib.request.urlopen(url, timeout=10) as r:
                 return float(json.loads(r.read().decode())["price"])
         except Exception as e:
             print("binance failed", host, e, file=sys.stderr)
@@ -111,9 +115,6 @@ def open_paper(st, cfg, w, coin, side, avg_px, usd, now, marks):
     S = cfg["settings"]
     inst, margin, lev = coin, S["margin"], S["leverage"]
     if is_gold(coin):
-        if side == "short":
-            log(st, now, f"{w['tag']} شورت طلا باز کرد (~${usd:,.0f}) ولی PAXG بایننس شورت ندارد؛ کپی نشد")
-            return
         inst, margin, lev = "PAXG", S.get("gold_margin", 100), 1
         if sum(1 for p in st["open"].values() if p["coin"] == "PAXG") >= S.get("gold_max", 3):
             log(st, now, f"{w['tag']} خرید طلا (~${usd:,.0f}) ولی سقف {S.get('gold_max', 3)} پوزیشن هم‌زمان طلا پر بود (نهنگ‌های طلا هم‌زمان می‌خرند)")

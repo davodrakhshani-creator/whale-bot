@@ -335,7 +335,8 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
       return tfetch("https://api.hyperliquid.xyz/info", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) })
         .then(function (r) { return r.json(); }).then(function (o) { Object.keys(o).forEach(function (k) { var v = Number(o[k]); if (v > 0) marks[k] = { px: v, live: true }; }); }).catch(function () {});
     });
-    jobs.push(tfetch("https://data-api.binance.vision/api/v3/ticker/price?symbol=PAXGUSDT").then(function (r) { return r.json(); })
+    jobs.push(tfetch("https://fapi.binance.com/fapi/v1/ticker/price?symbol=PAXGUSDT").then(function (r) { return r.json(); })
+      .catch(function () { return tfetch("https://data-api.binance.vision/api/v3/ticker/price?symbol=PAXGUSDT").then(function (r) { return r.json(); }); })
       .then(function (o) { var v = Number(o && o.price); if (v > 0) marks.PAXG = { px: v, live: true }; }).catch(function () {}));
     return Promise.all(jobs).then(function () { if (DATA) renderAll(); });
   }
@@ -362,7 +363,6 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     var side = sideOf(g.dir), S = DATA.settings, m = marks[g.coin], base = m && m.px > 0 ? m.px : g.usd / g.size, SL = 0.0003;
     if (!side || M.open.some(function (p) { return p.srcId === g.id; })) return;
     var gold = /gold/i.test(g.coin), inst = gold ? "PAXG" : g.coin;
-    if (gold && side === "short") { MSG[g.id] = "PAXG شورت ندارد"; alert_(g, "PAXG (طلای بایننس) شورت ندارد؛ فقط خرید طلا کپی می‌شه."); return; }
     if (gold) { m = marks.PAXG; base = m && m.px > 0 ? m.px : g.usd / g.size; }
     M.open.push({ id: M.seq++, srcId: g.id, tag: g.tag, addr: g.addr, coin: inst, src: g.coin, side: side, entry: side === "long" ? base * (1 + SL) : base * (1 - SL), margin: gold ? (S.gold_margin || 100) : S.margin, lev: gold ? 1 : S.leverage, openedAt: Date.now(), usedMark: !!(m && m.px > 0) });
     saveM(); renderAll();
@@ -550,7 +550,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     var closed = DATA.closed || [], wins = closed.filter(function (t) { return t.pnl > 0; }).length, used = (DATA.open || []).reduce(function (s, p) { return s + p.margin; }, 0);
     stat(ps, "بسته‌شده (۶۰ تای آخر)", String(closed.length)); stat(ps, "وین‌ریت", closed.length ? Math.round(100 * wins / closed.length) + "٪" : "—");
     stat(ps, "موجودی بسته‌ها", money(DATA.balance)); stat(ps, "آزاد برای کپی", money(Math.max(0, DATA.balance - used)));
-    $("p-rules").textContent = "ربات خودش و بدون دکمه کپی می‌کنه: هر ورودِ هر کدوم از ۱۱ کیف‌پول که حجمش از " + usd(S.min_usd) + " بیشتر باشه، با مارجین " + money(S.margin) + " و لوریج " + S.leverage + "x و حداکثر " + S.max_open + " پوزیشن هم‌زمان. ورود با قیمت فعلی و ۰٫۰۳٪ لغزش بدتر، کارمزد ۰٫۰۴۵٪ هر طرف، تصفیه در ۹۰٪ ضرر مارجین. وقتی نهنگ کل پوزیشنش رو بست، پوزیشن مجازی هم بسته می‌شه. طلا جداست: هر خریدِ طلای نهنگ‌ها روی PAXG (توکن طلای بایننس) با قیمت زنده‌ی بایننس، لوریج ۱x و مارجین " + money(S.gold_margin || 100) + " کپی می‌شه، حداکثر " + (S.gold_max || 3) + " پوزیشن هم‌زمان. PAXG شورت ندارد، پس شورت طلا کپی نمی‌شه. این عددها داخل فایل config.json هستن.";
+    $("p-rules").textContent = "ربات خودش و بدون دکمه کپی می‌کنه: هر ورودِ هر کدوم از ۱۱ کیف‌پول که حجمش از " + usd(S.min_usd) + " بیشتر باشه، با مارجین " + money(S.margin) + " و لوریج " + S.leverage + "x و حداکثر " + S.max_open + " پوزیشن هم‌زمان. ورود با قیمت فعلی و ۰٫۰۳٪ لغزش بدتر، کارمزد ۰٫۰۴۵٪ هر طرف، تصفیه در ۹۰٪ ضرر مارجین. وقتی نهنگ کل پوزیشنش رو بست، پوزیشن مجازی هم بسته می‌شه. طلا جداست: هر لانگ و هر شورتِ طلای نهنگ‌ها روی PAXGUSDT (فیوچرزِ طلای بایننس که شورت هم دارد) با قیمت بایننس، لوریج ۱x و مارجین " + money(S.gold_margin || 100) + " کپی می‌شه، حداکثر " + (S.gold_max || 3) + " پوزیشن هم‌زمان. اگه قیمت بایننس در دسترس نباشه از قیمت طلای Hyperliquid استفاده می‌شه. این عددها داخل فایل config.json هستن.";
     var ol = $("p-open"); ol.textContent = "";
     if (!(DATA.open || []).length) ol.appendChild(el("p", "empty", "هنوز ربات پوزیشنی باز نکرده. وقتی نهنگی ورود بزرگ داشته باشه خودکار اینجا میاد."));
     (DATA.open || []).forEach(function (p) {
