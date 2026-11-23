@@ -87,8 +87,11 @@ def open_paper(st, cfg, w, coin, side, avg_px, usd, now, marks):
     if key in st["open"]:
         return
     S = cfg["settings"]
-    if len(st["open"]) >= S["max_open"] or free_margin(st) < S["margin"]:
-        log(st, now, f"{w['tag']} باز کرد {coin} {side} (~${usd:,.0f}) ولی جا یا موجودی نبود")
+    if len(st["open"]) >= S["max_open"]:
+        log(st, now, f"{w['tag']} باز کرد {coin} {side} (~${usd:,.0f}) ولی سقف {S['max_open']} پوزیشن باز پر بود")
+        return
+    if free_margin(st) < S["margin"]:
+        log(st, now, f"{w['tag']} باز کرد {coin} {side} (~${usd:,.0f}) ولی موجودی آزاد کافی نبود")
         return
     base = marks.get(coin) or avg_px
     entry = base * (1 + SLIP) if side == "long" else base * (1 - SLIP)

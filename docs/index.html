@@ -182,7 +182,10 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
       <h2>ربات چطور کپی می‌کنه</h2>
       <p class="sub" id="p-rules"></p>
     </div>
-    <h2>پوزیشن‌های باز</h2>
+    <h2>کپی‌های دستی من</h2>
+    <p class="sub">اگه ربات چیزی را کپی نکرده بود، از فید «کپی دستی» بزن. این‌ها فقط توی همین مرورگر (روی همین گوشی) ذخیره می‌شن و جدا از دفتر ربات‌اند. قیمت را از Hyperliquid زنده می‌گیره و اگه نشد از آخرین داده‌ی ربات.</p>
+    <div class="list" id="p-manual"></div>
+    <h2>پوزیشن‌های باز (ربات)</h2>
     <div class="list" id="p-open"></div>
     <h2>تاریخچه</h2>
     <div class="list" id="p-closed"></div>
@@ -196,6 +199,9 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
   var START = 1000, GOAL = 1500, DATA = null, W = {}, SETS = { whale: [], hw: [], gold: [] }, WALLETS = [];
   var seen = {}, newAt = {}, aiOpen = {}, marks = {}, firstLoad = true, loadErr = null;
   var minUsd = 500, winH = 24, onlyOpen = false, touching = false, pending = false;
+  var M = { open: [], closed: [], seq: 1 }, MSG = {}, live = false;
+  try { var mv = JSON.parse(localStorage.getItem("whale-gh-manual") || "null"); if (mv && mv.open && mv.closed) M = mv; } catch (e) {}
+  function saveM() { try { localStorage.setItem("whale-gh-manual", JSON.stringify(M)); } catch (e) {} }
   try { var sv = localStorage.getItem("whale-gh-min"); if (sv !== null) minUsd = Number(sv) || 0; } catch (e) {}
   try { var sw = localStorage.getItem("whale-gh-win"); if (sw !== null) winH = Number(sw) || 24; } catch (e) {}
   var $ = function (id) { return document.getElementById(id); };
@@ -287,8 +293,8 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
 
   function ingest(data) {
     data.settings = data.settings || { min_usd: 2000, margin: 50, leverage: 5, max_open: 6 }; data.marks = data.marks || {}; data.open = data.open || []; data.closed = data.closed || []; data.events = data.events || []; data.equity = data.equity != null ? data.equity : START; data.balance = data.balance != null ? data.balance : START; data.updated = data.updated || Date.now();
-    DATA = data; W = {}; SETS = { whale: [], hw: [], gold: [] }; WALLETS = []; marks = {};
-    Object.keys(data.marks || {}).forEach(function (c) { marks[c] = { px: Number(data.marks[c]) }; });
+    DATA = data; W = {}; SETS = { whale: [], hw: [], gold: [] }; WALLETS = [];
+    Object.keys(data.marks || {}).forEach(function (c) { if (!marks[c] || !marks[c].live) marks[c] = { px: Number(data.marks[c]) }; });
     (data.wallets || []).forEach(function (w) {
       var d = { w: w, status: w.status, groups: w.groups || [], sum: w.sum || null, prof: w.prof || null, coins: w.coins || {}, top: [],
         at: w.at, histAt: w.hist_at || null, noHist: !!(w.hist_at && !w.sum), msg: "" };
@@ -313,6 +319,56 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     if ((DATA.open || []).some(hit)) return { closed: false };
     if ((DATA.closed || []).some(hit)) return { closed: true };
     return null;
+  }
+  function skipWhy(g) {
+    var ev = (DATA.events || []).filter(function (e) { return e.text.indexOf(g.tag + " باز کرد " + g.coin) === 0 && Math.abs(e.t - g.last) < 3600000; })[0];
+    if (ev) return /سقف|جا یا/.test(ev.text) ? "ربات کپی نکرد: سقف پوزیشن باز پر بود" : "ربات کپی نکرد: موجودی آزاد کافی نبود";
+    if (Date.now() - g.last < 15 * 60000) return "هنوز ثبت نشده؛ ربات هر ۵ تا ۱۵ دقیقه یک‌بار می‌خونه";
+    return "ربات کپی نکرد (بعد از رفرش دوباره نگاه کن)";
+  }
+  function manualCopy(g) {
+    var side = sideOf(g.dir), S = DATA.settings, m = marks[g.coin], base = m && m.px > 0 ? m.px : g.usd / g.size, SL = 0.0003;
+    if (!side || M.open.some(function (p) { return p.srcId === g.id; })) return;
+    M.open.push({ id: M.seq++, srcId: g.id, tag: g.tag, addr: g.addr, coin: g.coin, side: side, entry: side === "long" ? base * (1 + SL) : base * (1 - SL), margin: S.margin, lev: S.leverage, openedAt: Date.now(), usedMark: !!(m && m.px > 0) });
+    saveM(); renderAll();
+  }
+  function closeManual(p, px) {
+    var n = p.margin * p.lev, d = p.side === "long" ? 1 : -1, SL = 0.0003, ex = p.side === "long" ? px * (1 - SL) : px * (1 + SL);
+    var pnl = Math.max(-p.margin, n * d * (ex - p.entry) / p.entry - n * 0.00045 * 2);
+    M.open = M.open.filter(function (o) { return o.id !== p.id; }); M.closed.unshift({ id: p.id, coin: p.coin, side: p.side, lev: p.lev, margin: p.margin, entry: p.entry, exit: ex, pnl: pnl, tag: p.tag, closedAt: Date.now() });
+    M.closed = M.closed.slice(0, 100); saveM(); renderAll();
+  }
+  function whaleClosedAfter(p) {
+    var w = W[p.addr]; if (!w) return null;
+    var cg = w.groups.filter(function (g) { return g.coin === p.coin && isCloseDir(g.dir) && sideOf(g.dir) === p.side && g.last > p.openedAt; }).sort(function (a, b) { return b.last - a.last; })[0];
+    return cg ? { px: cg.usd / cg.size } : null;
+  }
+  function renderManual() {
+    var box = $("p-manual"); if (!box) return; box.textContent = "";
+    var tot = M.closed.reduce(function (s, t) { return s + t.pnl; }, 0);
+    if (!M.open.length && !M.closed.length) box.appendChild(el("p", "empty", "هنوز کپی دستی نزدی. از فید روی «کپی دستی» بزن."));
+    M.open.forEach(function (p) {
+      var c = el("article", "card"), mk = marks[p.coin], u = mk ? calcU(p, mk.px) : null, r = el("div", "row"), wc = whaleClosedAfter(p);
+      r.appendChild(el("strong", null, p.coin + " " + (p.side === "long" ? "لانگ" : "شورت") + " " + p.lev + "x"));
+      r.appendChild(el("span", "num " + (u == null ? "sub" : u >= 0 ? "up" : "down"), u == null ? "قیمت نیومد" : (u >= 0 ? "+" : "-") + money(Math.abs(u)).replace("-", ""))); c.appendChild(r);
+      c.appendChild(el("p", "sub num", "ورود " + price(p.entry) + (mk ? " · الان " + price(mk.px) : "") + " · مارجین " + money(p.margin) + " · کپی از " + p.tag + " · " + ago(p.openedAt)));
+      if (wc) c.appendChild(el("span", "pill bad", "نهنگ با قیمت " + price(wc.px) + " بست"));
+      var acts = el("div", "acts"), b1 = el("button", "btn primary", "بستن با قیمت فعلی"); b1.type = "button"; b1.disabled = !mk;
+      b1.addEventListener("click", function () { closeManual(p, marks[p.coin].px); }); acts.appendChild(b1);
+      if (wc) { var b2 = el("button", "btn", "بستن با قیمت نهنگ"); b2.type = "button"; b2.addEventListener("click", function () { closeManual(p, wc.px); }); acts.appendChild(b2); }
+      c.appendChild(acts); box.appendChild(c);
+    });
+    if (M.closed.length) {
+      var s = el("p", "sub"); s.appendChild(document.createTextNode("بسته‌شده‌های دستی: " + M.closed.length + " · مجموع ")); s.appendChild(el("b", "num " + (tot >= 0 ? "up" : "down"), (tot >= 0 ? "+" : "-") + money(Math.abs(tot)).replace("-", ""))); box.appendChild(s);
+      M.closed.slice(0, 10).forEach(function (t) { box.appendChild(el("p", "sub num", t.coin + " " + (t.side === "long" ? "لانگ" : "شورت") + " · " + price(t.entry) + " ← " + price(t.exit) + " · " + (t.pnl >= 0 ? "+" : "-") + money(Math.abs(t.pnl)).replace("-", "") + " · از " + t.tag)); });
+    }
+  }
+  function pullLive() {
+    var ok = 0;
+    [{ type: "allMids" }, { type: "allMids", dex: "xyz" }].forEach(function (b) {
+      fetch("https://api.hyperliquid.xyz/info", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) })
+        .then(function (r) { return r.json(); }).then(function (o) { Object.keys(o).forEach(function (k) { var v = Number(o[k]); if (v > 0) marks[k] = { px: v, live: true }; }); live = true; if (DATA) renderAll(); }).catch(function () {});
+    });
   }
   function autoText(g, d) {
     var side = sideOf(g.dir), v = verdict(d, g), rk = riskOf(d, g), sc = d.score, pro = [], con = [], cs = d.coins[g.coin + "|" + side], mk = marks[g.coin], avgPx = g.usd / g.size;
@@ -346,7 +402,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     renderFeed(SETS.whale, "feed", function (g) { return g.usd >= minUsd && g.last >= wf && (!onlyOpen || isOpenDir(g.dir)); });
     renderFeed(SETS.hw, "hw-feed", function () { return true; });
     renderFeed(SETS.gold, "gold-feed", function (g) { return /gold/i.test(g.coin); });
-    renderWallets(SETS.whale, "wallets"); renderWallets(SETS.hw, "hw-wallets"); renderWallets(SETS.gold, "gold-wallets"); renderPaper();
+    renderWallets(SETS.whale, "wallets"); renderWallets(SETS.hw, "hw-wallets"); renderWallets(SETS.gold, "gold-wallets"); renderPaper(); renderManual();
   }
   function renderBanner() {
     var strip = $("strip"), banner = $("banner"), txt = $("banner-text"); strip.textContent = "";
@@ -405,7 +461,8 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
         if (cp) acts.appendChild(el("span", "pill good", cp.closed ? "ربات این را کپی کرده بود" : "ربات کپی کرد ✓"));
         else if (g.first < (DATA.started || 0)) acts.appendChild(el("span", "pill", "قبل از شروع ربات بود"));
         else if (g.usd < (DATA.settings.min_usd || 0)) acts.appendChild(el("span", "pill", "زیر حداقل حجم کپی (" + usd(DATA.settings.min_usd) + ")"));
-        else acts.appendChild(el("span", "pill mid", "کپی نشد (جا/موجودی نبود یا هنوز ثبت نشده)"));
+        else acts.appendChild(el("span", "pill mid", skipWhy(g)));
+        if (!cp) { var mine = M.open.some(function (p) { return p.srcId === g.id; }), mb = el("button", "btn primary", mine ? "کپی دستی شد" : "کپی دستی"); mb.type = "button"; mb.disabled = mine; mb.addEventListener("click", function () { manualCopy(g); }); acts.appendChild(mb); }
         var ab = el("button", "btn", aiOpen[g.id] ? "بستن تحلیل" : "تحلیل خودکار"); ab.type = "button";
         ab.addEventListener("click", function () { aiOpen[g.id] = !aiOpen[g.id]; renderAll(); }); acts.appendChild(ab);
         rec.appendChild(acts);
@@ -529,7 +586,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     $("hw-note").textContent = "این لیست یک عکسِ ثابت از ۲۲ نوامبر ۲۰۲۶ است (از دیتای Coinversa) و خودش به‌روز نمی‌شه. ملیت یا هویت صاحب کیف‌پول (مثلاً ژاپنی بودن) از داده معلوم نیست. وین‌ریت و سود گذشته تضمین آینده نیست.";
   }
   renderHW();
-  load(); setInterval(load, 60000); setInterval(function () { if (DATA) renderAll(); }, 30000);
+  load(); pullLive(); setInterval(pullLive, 30000); setInterval(load, 60000); setInterval(function () { if (DATA) renderAll(); }, 30000);
 })();
 </script>
 </body>

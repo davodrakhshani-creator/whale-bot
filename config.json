@@ -12,5 +12,5 @@
     {"addr": "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9", "tag": "a70a", "group": "طلا"},
     {"addr": "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37", "tag": "c191", "group": "طلا"}
   ],
-  "settings": {"start_balance": 1000, "margin": 50, "leverage": 5, "max_open": 6, "min_usd": 2000}
+  "settings": {"start_balance": 1000, "margin": 50, "leverage": 5, "max_open": 15, "min_usd": 2000}
 }
