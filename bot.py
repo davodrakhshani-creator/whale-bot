@@ -246,7 +246,7 @@ def analyze(fills):
             c["n"] += 1
             c["w"] += 1 if l["pnl"] > 0 else 0
             c["pnl"] += l["pnl"]
-    last = max(l["t1"] for l in lcs)
+    last = max(int(f["time"]) for f in fills if not is_spot(f.get("coin", "")))  # any fill, not only closes
     summary = {"closed": len(lcs), "wins": len(wins), "winRate": 100.0 * len(wins) / len(lcs), "totalPnl": sum(l["pnl"] for l in lcs),
                "biggestWin": max([l["pnl"] for l in wins], default=0.0), "biggestLoss": min([l["pnl"] for l in loss], default=0.0),
                "liquidations": sum(1 for l in lcs if l["liq"]), "avgDurationMs": avg([dur(l) for l in lcs]), "open": n_open,

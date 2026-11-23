@@ -292,6 +292,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     (data.wallets || []).forEach(function (w) {
       var d = { w: w, status: w.status, groups: w.groups || [], sum: w.sum || null, prof: w.prof || null, coins: w.coins || {}, top: [],
         at: w.at, histAt: w.hist_at || null, noHist: !!(w.hist_at && !w.sum), msg: "" };
+      if (d.sum && d.groups.length) { var mx = Math.max.apply(null, d.groups.map(function (g) { return g.last; })); if (!(Date.parse(d.sum.lastActivityAt) >= mx)) d.sum = Object.assign({}, d.sum, { lastActivityAt: new Date(mx).toISOString() }); }
       d.lc0 = !!d.prof; d.score = scoreOf(d.sum);
       d.top = Object.keys(d.coins).filter(function (k) { return /\|\*$/.test(k); }).map(function (k) { return d.coins[k]; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 4);
       d.groups.forEach(function (g) { g.addr = w.addr; if (!seen[g.id]) { seen[g.id] = true; if (!firstLoad) newAt[g.id] = Date.now(); } });
