@@ -3,44 +3,533 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Whale Paper Bot</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Whale Feed">
+<meta name="color-scheme" content="light dark">
+<title>Whale Feed</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700&display=swap">
 <style>
-:root{--bg:#F2F4F7;--s:#fff;--l:#DCE1E9;--fg:#101828;--m:#586275;--ac:#2753B8;--up:#12794A;--dn:#BE3030}
-@media(prefers-color-scheme:dark){:root{--bg:#0D1220;--s:#151C2D;--l:#263149;--fg:#E7ECF5;--m:#95A1B8;--ac:#86A9FF;--up:#4BD497;--dn:#FF8080}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.7 Vazirmatn,system-ui,sans-serif;padding:14px max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left))}
-.w{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:12px}h1{font-size:1.4rem;margin:0}h2{font-size:1rem;margin:6px 0 0}
-.c{background:var(--s);border:1px solid var(--l);border-radius:12px;padding:12px 14px}.r{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
-.m{color:var(--m);font-size:.85rem}.big{font-size:1.9rem;font-weight:700}.n{direction:ltr;unicode-bidi:isolate;display:inline-block;font-variant-numeric:tabular-nums}
-.up{color:var(--up)}.dn{color:var(--dn)}.bar{height:10px;border-radius:99px;background:var(--l);overflow:hidden}.bar i{display:block;height:100%;background:var(--ac)}
+/* Layout: one narrow column, three tabs: live feed with a track-record verdict on every move, wallet scorecards, paper copy-trading ledger. */
+:root {
+  --bg: #F2F4F7; --surface: #FFFFFF; --line: #DCE1E9; --fg: #101828; --muted: #586275;
+  --accent: #2753B8; --accent-soft: #E4EBFA; --buy: #12794A; --sell: #BE3030;
+  --buy-soft: #E1F4EA; --sell-soft: #FBE5E5; --mid: #8A5A00; --mid-soft: #FFF1CC;
+  --warn-bg: #FFF4DB; --warn-fg: #6B4A00;
+  --font: "Vazirmatn", system-ui, -apple-system, "Segoe UI", Tahoma, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0D1220; --surface: #151C2D; --line: #263149; --fg: #E7ECF5; --muted: #95A1B8;
+    --accent: #86A9FF; --accent-soft: #1D2A4A; --buy: #4BD497; --sell: #FF8080;
+    --buy-soft: #12301F; --sell-soft: #3A1B1B; --mid: #F3D98B; --mid-soft: #3A2F12;
+    --warn-bg: #3A2F12; --warn-fg: #F3D98B; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0D1220; --surface: #151C2D; --line: #263149; --fg: #E7ECF5; --muted: #95A1B8;
+  --accent: #86A9FF; --accent-soft: #1D2A4A; --buy: #4BD497; --sell: #FF8080;
+  --buy-soft: #12301F; --sell-soft: #3A1B1B; --mid: #F3D98B; --mid-soft: #3A2F12;
+  --warn-bg: #3A2F12; --warn-fg: #F3D98B; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 15px; line-height: 1.7;
+  padding-block: 14px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+h1 { font-size: 1.5rem; line-height: 1.3; margin: 0; }
+h2 { font-size: 1.02rem; margin: 0; }
+p { margin: 0; }
+.sub { color: var(--muted); font-size: .85rem; }
+.num { font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; display: inline-block; }
+button, select, input { font: inherit; }
+button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.up { color: var(--buy) !important; } .down { color: var(--sell) !important; }
+
+.tabs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.tabs button { border: 0; background: transparent; color: var(--muted); padding: 8px 1px; border-radius: 9px; cursor: pointer; font-weight: 500; font-size: .72rem; line-height: 1.4; }
+.tabs button[aria-selected="true"] { background: var(--accent-soft); color: var(--accent); }
+.view { display: flex; flex-direction: column; gap: 12px; }
+
+.strip { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 99px; padding: 2px 10px; font-size: .8rem; }
+.chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); display: inline-block; }
+.chip.ok i { background: var(--buy); } .chip.err i { background: var(--sell); }
+.tools { display: flex; gap: 10px 14px; align-items: center; flex-wrap: wrap; justify-content: space-between; }
+.tools label { display: flex; gap: 8px; align-items: center; font-size: .85rem; color: var(--muted); }
+select, input[type="number"] { background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 9px; padding: 6px 10px; font-size: 16px; direction: ltr; text-align: left; }
+input[type="number"] { width: 100%; min-width: 0; }
+.banner { background: var(--warn-bg); color: var(--warn-fg); border-radius: 10px; padding: 10px 12px; font-size: .88rem; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.btn { border: 1px solid var(--line); background: transparent; color: var(--fg); border-radius: 9px; padding: 6px 12px; font-weight: 500; font-size: .85rem; cursor: pointer; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.btn.danger { color: var(--sell); }
+.btn[disabled] { opacity: .5; cursor: default; }
+
+.feed, .list { display: flex; flex-direction: column; gap: 10px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.card.new { border-color: var(--accent); }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.who { font-family: var(--mono); font-size: .82rem; color: var(--muted); text-decoration: none; direction: ltr; }
+.when { font-size: .8rem; color: var(--muted); }
+.head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.side { font-weight: 700; font-size: .82rem; padding: 1px 10px; border-radius: 99px; }
+.side.buy { background: var(--buy-soft); color: var(--buy); } .side.sell { background: var(--sell-soft); color: var(--sell); }
+.coin { font-weight: 700; font-size: 1.1rem; direction: ltr; unicode-bidi: isolate; }
+.dir { color: var(--muted); font-size: .86rem; }
+.pill { font-size: .72rem; font-weight: 700; padding: 0 8px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); }
+.pill.good { background: var(--buy-soft); color: var(--buy); } .pill.bad { background: var(--sell-soft); color: var(--sell); } .pill.mid { background: var(--mid-soft); color: var(--mid); }
+.stats { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: .86rem; }
+.stats span { color: var(--muted); } .stats b { color: var(--fg); font-weight: 500; }
+.rec { border-top: 1px solid var(--line); padding-top: 8px; display: flex; flex-direction: column; gap: 6px; font-size: .86rem; }
+.rec .why { color: var(--muted); }
+.acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.ai { background: var(--accent-soft); border-radius: 10px; padding: 8px 10px; font-size: .86rem; white-space: pre-wrap; }
+.empty { color: var(--muted); text-align: center; padding: 24px 0; }
+
+.score { display: flex; align-items: baseline; gap: 6px; }
+.score b { font-size: 2rem; line-height: 1; }
+.score.good b { color: var(--buy); } .score.mid b { color: var(--mid); } .score.bad b { color: var(--sell); }
+.fac { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; font-size: .84rem; }
+.fac .bar { grid-column: 1 / -1; height: 5px; background: var(--accent-soft); border-radius: 99px; overflow: hidden; }
+.fac .bar i { display: block; height: 100%; background: var(--accent); }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 14px; font-size: .84rem; }
+.grid2 div { display: flex; justify-content: space-between; gap: 6px; border-bottom: 1px dashed var(--line); padding: 1px 0; }
+.grid2 span { color: var(--muted); }
+.goalbar { height: 10px; background: var(--accent-soft); border-radius: 99px; overflow: hidden; }
+.goalbar i { display: block; height: 100%; background: var(--accent); width: 0; }
+.big { font-size: 1.8rem; font-weight: 700; line-height: 1.2; }
+.fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.fields label { display: flex; flex-direction: column; gap: 2px; font-size: .8rem; color: var(--muted); min-width: 0; }
+.fields .full { grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 8px; }
+[hidden] { display: none !important; }
+body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
 </style>
 </head>
-<body><div class="w">
-<h1>Whale Paper Bot</h1>
-<p class="m">کپی مجازی نهنگ‌ها، روی سرور GitHub. فقط داده‌ی عمومی می‌خونه و هیچ معامله‌ی واقعی نمی‌کنه.</p>
-<div class="c"><div class="r"><span class="m">موجودی مجازی (با سود باز)</span><span class="m" id="upd"></span></div>
-<div class="big n" id="eq">…</div><div class="bar"><i id="bar" style="width:0"></i></div>
-<div class="r m"><span>شروع <span class="n">$1,000</span></span><span id="pct"></span><span>هدف <span class="n">$1,500</span></span></div></div>
-<h2>پوزیشن‌های باز</h2><div id="open"></div>
-<h2>آخرین رویدادها</h2><div id="ev"></div>
-<h2>پوزیشن‌های بسته</h2><div id="cl"></div>
+<body>
+<div dir="rtl" lang="fa" class="wrap">
+  <header>
+    <h1>Whale Feed</h1>
+    <p class="sub">معاملات نهنگ‌های Hyperliquid، سابقه‌ی هرکدوم و کپی مجازی. ربات روی GitHub هر ۵ دقیقه خودش اجرا می‌شه، حتی وقتی این صفحه بسته است. فقط داده‌ی عمومی می‌خونه و هیچ معامله‌ی واقعی انجام نمی‌ده.</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" id="t-feed" aria-selected="true">فید</button>
+    <button role="tab" id="t-wallets" aria-selected="false">سابقه‌ی نهنگ‌ها</button>
+    <button role="tab" id="t-paper" aria-selected="false">کپی مجازی</button>
+    <button role="tab" id="t-hw" aria-selected="false">وین‌ریت بالا</button>
+    <button role="tab" id="t-gold" aria-selected="false">طلا</button>
+  </div>
+
+  <div class="banner" id="banner" hidden><span id="banner-text"></span></div>
+
+  <section class="view" id="v-feed">
+    <div class="strip" id="strip"></div>
+    <div class="tools">
+      <label for="min-usd">حداقل حجم
+        <select id="min-usd">
+          <option value="0">همه</option><option value="500">۵۰۰ دلار</option>
+          <option value="2000">۲٬۰۰۰ دلار</option><option value="10000">۱۰٬۰۰۰ دلار</option>
+        </select>
+      </label>
+      <label for="win-h">بازه
+        <select id="win-h"><option value="6">۶ ساعت</option><option value="24">۲۴ ساعت</option><option value="72">۳ روز</option></select>
+      </label>
+      <label for="only-open"><input type="checkbox" id="only-open"> فقط ورودها</label>
+      <span class="sub" id="updated"></span>
+    </div>
+    <div class="feed" id="feed" aria-live="polite"></div>
+    <p class="sub">تکه‌های هم‌کوین و هم‌جهت با فاصله‌ی کمتر از ۵ دقیقه یک حرکت حساب می‌شن. «سابقه» از پوزیشن‌های کامل‌شده‌ی ۹۰ روز اخیر همون نهنگ روی همون کوین و جهت حساب می‌شه و پیش‌بینی نیست. داده هر ۵ تا ۱۵ دقیقه توسط ربات تازه می‌شه (GitHub گاهی دیر اجرا می‌کنه) و صفحه‌ی باز هر دقیقه دوباره می‌خونه.</p>
+  </section>
+
+  <section class="view" id="v-wallets" hidden>
+    <p class="sub">امتیاز از ۱۰۰ و فقط خلاصه‌ی سابقه‌ی ۹۰ روز اخیره: ۲۵ درصد پوزیشن‌های سودده، ۲۵ سود کل نسبت به بدترین باخت، ۲۰ نبود تصفیه، ۱۵ تعداد پوزیشن، ۱۵ فعال بودن اخیر. تضمین آینده نیست.</p>
+    <div class="list" id="wallets"></div>
+  </section>
+
+  <section class="view" id="v-hw" hidden>
+    <div class="banner"><span>هشدار مهم: وین‌ریت ۹۰ تا ۱۰۰٪ِ لیست‌های عمومی اغلب وهمه. اون‌ها وین‌ریتِ «فیل» رو حساب می‌کنن (هر تکه‌ی کوچک یک «برد»). یک پوزیشن می‌تونه هزاران فیل باشه. اینجا هر کیف‌پول رو با وین‌ریتِ پوزیشن‌هاش چک کردم.</span></div>
+    <h2>حرکت‌های زنده‌ی این چهار نفر (۳ روز اخیر)</h2>
+    <p class="sub">همان نشانگرهای فید اصلی: سابقه‌ی مشابه، احتمال تاریخی باخت، نقطه‌ضعف، تحلیل خودکار و وضعیت کپی مجازی ربات.</p>
+    <div class="feed" id="hw-feed" aria-live="polite"></div>
+    <h2>سابقه و نقطه‌ضعف‌ها</h2>
+    <div class="list" id="hw-wallets"></div>
+    <h2>نتیجه‌ی جستجو</h2>
+    <div class="list" id="hw-list"></div>
+    <p class="sub" id="hw-note"></p>
+  </section>
+
+  <section class="view" id="v-gold" hidden>
+    <div class="banner"><span>نتیجه‌ی بررسی طلا (xyz:GOLD): کیف‌پولی با «وین‌ریت خیلی بالا + نمونه‌ی زیاد + سود قابل قبول» در طلا پیدا نکردم. بیشتر معامله‌گرهای طلا ربات‌های کوچکِ هم‌زمان هستند: چند کیف‌پول همین الان دقیقاً در یک ثانیه پوزیشن می‌بندند و باز می‌کنند، یعنی یک سیگنالِ مشترک هستن، نه نظرِ مستقل همه‌شان. دو نفری که با داده بیشتر بررسی شدند این‌جا زنده دنبال می‌شن: a70a (سویینگ، ۵۸٪، سود حدود ۲۵ هزار دلار) و c191 (۷۰٪، ولی دو باخت بزرگ‌تر از بیشتر بردها). وین‌ریتها از چند ده پوزیشن محاسبه شده و قطعی نیستند.</span></div>
+    <h2>حرکت‌های زنده‌ی طلا (۳ روز اخیر)</h2>
+    <p class="sub">همان نشانگرهای فید اصلی. فقط معامله‌های طلا نشون داده می‌شه.</p>
+    <div class="feed" id="gold-feed" aria-live="polite"></div>
+    <h2>سابقه و نقطه‌ضعف‌ها</h2>
+    <div class="list" id="gold-wallets"></div>
+  </section>
+
+  <section class="view" id="v-paper" hidden>
+    <div class="card">
+      <div class="row"><span class="sub">موجودی مجازی (با سود باز)</span><span class="sub" id="p-day"></span></div>
+      <div class="big num" id="p-eq">$1,000.00</div>
+      <div class="goalbar" aria-hidden="true"><i id="p-bar"></i></div>
+      <div class="row sub"><span>شروع <span class="num">$1,000</span></span><span id="p-pct"></span><span>هدف <span class="num">$1,500</span></span></div>
+      <div class="grid2" id="p-stats"></div>
+    </div>
+    <div class="card">
+      <h2>ربات چطور کپی می‌کنه</h2>
+      <p class="sub" id="p-rules"></p>
+    </div>
+    <h2>پوزیشن‌های باز</h2>
+    <div class="list" id="p-open"></div>
+    <h2>تاریخچه</h2>
+    <div class="list" id="p-closed"></div>
+    <h2>رویدادهای ربات</h2>
+    <div class="list" id="p-events"></div>
+    <p class="sub">این دفتر روی GitHub ذخیره می‌شه، پس با بستن صفحه یا برنامه صفر نمی‌شه. پول و سفارش واقعی در کار نیست.</p>
+  </section>
 </div>
 <script>
-function $(i){return document.getElementById(i)}
-function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
-function mo(n){return (n<0?"-$":"$")+Math.abs(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}
-var tz=new Intl.DateTimeFormat("en-GB",{timeZone:"Asia/Tehran",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false});
-function tm(t){return tz.format(new Date(t))}
-fetch("data.json?"+Date.now()).then(function(r){return r.json()}).then(function(d){
- $("eq").textContent=mo(d.equity);var p=Math.max(0,Math.min(1,(d.equity-d.start)/500))*100;
- $("bar").style.width=p+"%";$("pct").textContent=Math.round(p)+"٪ از مسیر هدف";$("upd").textContent="به‌روزرسانی "+tm(d.updated);
- var o=$("open");if(!d.open.length)o.appendChild(el("p","m","پوزیشن بازی نیست."));
- d.open.forEach(function(p){var c=el("div","c"),r=el("div","r");r.appendChild(el("b",null,p.tag+" · "+p.coin+" "+(p.side=="long"?"لانگ":"شورت")+" "+p.lev+"x"));
-  r.appendChild(el("span","n "+(p.upnl>=0?"up":"dn"),p.upnl==null?"—":mo(p.upnl)));c.appendChild(r);
-  c.appendChild(el("p","m n","ورود "+Number(p.entry.toPrecision(6))+(p.mark?" · الان "+Number(p.mark.toPrecision(6)):"")+" · "+tm(p.opened_at)));o.appendChild(c)});
- var e=$("ev");d.events.slice(0,25).forEach(function(x){var c=el("div","c");c.appendChild(el("span","m n",tm(x.t)+"  "));c.appendChild(document.createTextNode(x.text));e.appendChild(c)});
- var cl=$("cl");if(!d.closed.length)cl.appendChild(el("p","m","هنوز چیزی بسته نشده."));
- d.closed.slice(0,30).forEach(function(t){var c=el("div","c"),r=el("div","r");r.appendChild(el("b",null,t.tag+" · "+t.coin+" "+(t.side=="long"?"لانگ":"شورت")));
-  r.appendChild(el("span","n "+(t.pnl>=0?"up":"dn"),mo(t.pnl)));c.appendChild(r);c.appendChild(el("p","m n",Number(t.entry.toPrecision(6))+" → "+Number(t.exit.toPrecision(6))+" · "+tm(t.closed_at)));cl.appendChild(c)});
-}).catch(function(){$("eq").textContent="هنوز داده‌ای نیست (بعد از اولین اجرا پر می‌شه)"});
-</script></body></html>
+(function () {
+  var START = 1000, GOAL = 1500, DATA = null, W = {}, SETS = { whale: [], hw: [], gold: [] }, WALLETS = [];
+  var seen = {}, newAt = {}, aiOpen = {}, marks = {}, firstLoad = true, loadErr = null;
+  var minUsd = 500, winH = 24, onlyOpen = false, touching = false, pending = false;
+  try { var sv = localStorage.getItem("whale-gh-min"); if (sv !== null) minUsd = Number(sv) || 0; } catch (e) {}
+  try { var sw = localStorage.getItem("whale-gh-win"); if (sw !== null) winH = Number(sw) || 24; } catch (e) {}
+  var $ = function (id) { return document.getElementById(id); };
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function num(x) { var n = Number(x); return isFinite(n) ? n : 0; }
+  function clamp(x) { return Math.max(0, Math.min(1, x)); }
+
+  function sideOf(dir) { return /long/i.test(dir) ? "long" : /short/i.test(dir) ? "short" : null; }
+  function isOpenDir(d) { return /^open/i.test(d); }
+  function isCloseDir(d) { return /^close/i.test(d); }
+  /* ---------- track record ---------- */
+  function scoreOf(sm) {
+    if (!sm) return null;
+    var closed = num(sm.closed), wr = num(sm.winRate), tot = num(sm.totalPnl), bl = Math.abs(num(sm.biggestLoss)), liq = num(sm.liquidations);
+    var lastMs = Date.parse(sm.lastActivityAt), days = isFinite(lastMs) ? (Date.now() - lastMs) / 86400000 : 99;
+    var ratio = bl ? tot / bl : 0;
+    var f = [
+      { label: "درصد پوزیشن‌های سودده", val: wr.toFixed(0) + "٪", max: 25, pts: 25 * clamp((wr - 40) / 30) },
+      { label: "سود کل نسبت به بدترین باخت", val: bl ? (ratio < 0 ? "منفی" : ratio.toFixed(1) + " برابر") : "—", max: 25, pts: bl ? 25 * clamp(ratio / 10) : 12 },
+      { label: "تصفیه‌ها", val: liq + " از " + closed, max: 20, pts: 20 * (1 - clamp((closed ? liq / closed : 0) / 0.05)) },
+      { label: "تعداد پوزیشن بسته", val: String(closed), max: 15, pts: 15 * clamp(closed / 200) },
+      { label: "آخرین فعالیت", val: days < 1 ? "امروز" : Math.round(days) + " روز پیش", max: 15, pts: 15 * (1 - clamp((days - 1) / 13)) }
+    ];
+    var total = f.reduce(function (s, x) { return s + x.pts; }, 0);
+    return { total: Math.round(total), f: f, days: days };
+  }
+  function lvlOf(total) { return total >= 65 ? "good" : total >= 45 ? "mid" : "bad"; }
+  function weakLines(d) {
+    var p = d.prof, out = [];
+    if (!p || p.n < 30) return out;
+    var wr = 1 - p.lossRate;
+    if (p.payoff < 1) out.push({ t: "میانگین باختش (" + usd(p.avgLoss) + ") " + (p.avgLoss / p.avgWin).toFixed(1) + " برابر میانگین بردشه (" + usd(p.avgWin) + "). وین‌ریت بالاش از بستن زودهنگام بردهای کوچک میاد و باخت‌ها بزرگ‌ترن.", bad: true });
+    else out.push({ t: "میانگین بردش (" + usd(p.avgWin) + ") بیشتر از میانگین باختشه (" + usd(p.avgLoss) + "); وین‌ریت پایین هم قابل تحمله.", bad: false });
+    if (p.winDur && p.lossDur > 1.5 * p.winDur) out.push({ t: "پوزیشن‌های بازنده رو میانگین " + dur(p.lossDur) + " نگه می‌داره ولی برنده‌ها رو " + dur(p.winDur) + ". یعنی دیر ضرر رو می‌بنده و می‌ذاره باخت بزرگ بشه.", bad: true });
+    if (p.top3Share > 0.4) out.push({ t: "سه باخت بزرگش " + Math.round(p.top3Share * 100) + "٪ کل ضررهاش رو ساخته؛ نقطه‌ضعفش باخت‌های نادر و خیلی بزرگه.", bad: true });
+    var L = p.sides.long, S = p.sides.short;
+    if (L.n >= 20 && S.n >= 20) { var wl = L.w / L.n, ws = S.w / S.n; if (Math.abs(wl - ws) > 0.12) out.push({ t: "روی " + (wl < ws ? "لانگ" : "شورت") + " ضعیف‌تره: " + Math.round(100 * Math.min(wl, ws)) + "٪ برد در برابر " + Math.round(100 * Math.max(wl, ws)) + "٪ در طرف دیگه.", bad: true }); }
+    p.buckets.forEach(function (b) { if (b.n >= 15 && b.w / b.n < wr - 0.15) out.push({ t: "پوزیشن‌های " + b.label + " رو ضعیف می‌بنده: " + Math.round(100 * b.w / b.n) + "٪ برد (" + b.n + " تا).", bad: true }); });
+    var worst = Object.keys(d.coins).map(function (k) { return d.coins[k]; }).filter(function (c) { return c.side === "*" && c.n >= 5 && c.pnl < 0; }).sort(function (a, b) { return a.pnl - b.pnl; }).slice(0, 2);
+    worst.forEach(function (c) { out.push({ t: "روی " + c.coin + " مجموعاً ضررده؛ " + c.n + " پوزیشن، " + Math.round(100 * c.w / c.n) + "٪ برد، مجموع -" + usd(c.pnl) + ".", bad: true }); });
+    return out;
+  }
+  function riskOf(d, g) {
+    var p = d.prof, side = sideOf(g.dir);
+    if (!p || p.n < 30 || !side) return null;
+    var cs = d.coins[g.coin + "|" + side], K = 6, basis;
+    var L, n;
+    if (cs && cs.n >= 8) { L = cs.n - cs.w; n = cs.n; basis = g.coin + " " + (side === "long" ? "لانگ" : "شورت") + " (" + n + " پوزیشن)"; }
+    else { var s = p.sides[side]; L = s.n - s.w; n = s.n; basis = "کل " + (side === "long" ? "لانگ" : "شورت") + "هاش (" + n + " پوزیشن) چون روی " + g.coin + " داده کمه"; }
+    var pr = (L + K * p.lossRate) / (n + K), se = Math.sqrt(pr * (1 - pr) / (n + K)) * 1.64;
+    var lo = Math.max(0, Math.round(100 * (pr - se) / 5) * 5), hi = Math.min(100, Math.round(100 * (pr + se) / 5) * 5);
+    return { pct: Math.round(100 * pr), lo: lo, hi: hi, basis: basis, n: n, lvl: pr < 0.3 ? "good" : pr < 0.5 ? "mid" : "bad" };
+  }
+  function verdict(d, g) {
+    var sc = d.score, side = sideOf(g.dir);
+    if (!sc) return { lvl: "mid", label: "سابقه در حال لود", why: "" };
+    var lvl = lvlOf(sc.total), cs = side ? d.coins[g.coin + "|" + side] : null, why;
+    var sideFa = side === "long" ? "لانگ" : "شورت";
+    if (!d.lc0) why = "سابقه‌ی کوین‌ها هنوز نیومده.";
+    else if (!cs || cs.n < 5) { why = "روی " + g.coin + " " + sideFa + " کمتر از ۵ پوزیشن بسته‌شده داره، پس شواهد کمه."; if (lvl === "good") lvl = "mid"; }
+    else {
+      var r = cs.w / cs.n;
+      why = "روی " + g.coin + " " + sideFa + ": " + cs.n + " پوزیشن، " + cs.w + " تا سودده (" + Math.round(r * 100) + "٪)، مجموع " + (cs.pnl >= 0 ? "+" : "-") + usd(cs.pnl) + ".";
+      if (r < 0.4) lvl = lvl === "good" ? "mid" : "bad";
+    }
+    return { lvl: lvl, label: lvl === "good" ? "سابقه‌ی خوب" : lvl === "mid" ? "محتاط" : "سابقه‌ی ضعیف", why: why };
+  }
+
+  /* ---------- formatting ---------- */
+  function usd(n) { var a = Math.abs(n); return "$" + (a >= 1e6 ? (a / 1e6).toFixed(2) + "M" : a >= 1e3 ? (a / 1e3).toFixed(1) + "K" : a.toFixed(0)); }
+  function money(n) { return (n < 0 ? "-$" : "$") + Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function qty(n) { var a = Math.abs(n); return a >= 1e6 ? (a / 1e6).toFixed(2) + "M" : a >= 1e3 ? (a / 1e3).toFixed(1) + "K" : String(Number(a.toPrecision(4))); }
+  function price(p) { return String(Number(p.toPrecision(5))); }
+  function dirFa(d) {
+    if (/^open long/i.test(d)) return "باز کردن لانگ"; if (/^open short/i.test(d)) return "باز کردن شورت";
+    if (/^close long/i.test(d)) return "بستن لانگ"; if (/^close short/i.test(d)) return "بستن شورت"; return d || "—";
+  }
+  var tzDay = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tehran", year: "numeric", month: "2-digit", day: "2-digit" });
+  var tzTime = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Tehran", hour: "2-digit", minute: "2-digit", hour12: false });
+  function clock(t) { var d = new Date(t), s = tzTime.format(d); return tzDay.format(d) === tzDay.format(new Date()) ? s : tzDay.format(d).slice(5) + " " + s; }
+  function ago(t) {
+    var s = Math.max(0, Math.round((Date.now() - t) / 1000));
+    if (s < 60) return "همین الان"; if (s < 3600) return Math.floor(s / 60) + " دقیقه پیش";
+    if (s < 86400) return Math.floor(s / 3600) + " ساعت پیش"; return Math.floor(s / 86400) + " روز پیش";
+  }
+  function dur(ms) { var h = ms / 3600000; return h < 48 ? h.toFixed(0) + " ساعت" : (h / 24).toFixed(1) + " روز"; }
+  function stat(parent, label, val, cls) { var s = el("div"); s.appendChild(el("span", null, label + " ")); s.appendChild(el("b", "num" + (cls ? " " + cls : ""), val)); parent.appendChild(s); }
+
+
+  function ingest(data) {
+    data.settings = data.settings || { min_usd: 2000, margin: 50, leverage: 5, max_open: 6 }; data.marks = data.marks || {}; data.open = data.open || []; data.closed = data.closed || []; data.events = data.events || []; data.equity = data.equity != null ? data.equity : START; data.balance = data.balance != null ? data.balance : START; data.updated = data.updated || Date.now();
+    DATA = data; W = {}; SETS = { whale: [], hw: [], gold: [] }; WALLETS = []; marks = {};
+    Object.keys(data.marks || {}).forEach(function (c) { marks[c] = { px: Number(data.marks[c]) }; });
+    (data.wallets || []).forEach(function (w) {
+      var d = { w: w, status: w.status, groups: w.groups || [], sum: w.sum || null, prof: w.prof || null, coins: w.coins || {}, top: [],
+        at: w.at, histAt: w.hist_at || null, noHist: !!(w.hist_at && !w.sum), msg: "" };
+      d.lc0 = !!d.prof; d.score = scoreOf(d.sum);
+      d.top = Object.keys(d.coins).filter(function (k) { return /\|\*$/.test(k); }).map(function (k) { return d.coins[k]; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 4);
+      d.groups.forEach(function (g) { g.addr = w.addr; if (!seen[g.id]) { seen[g.id] = true; if (!firstLoad) newAt[g.id] = Date.now(); } });
+      W[w.addr] = d; WALLETS.push(w);
+      SETS[w.group === "نهنگ" ? "whale" : w.group === "طلا" ? "gold" : "hw"].push(w);
+    });
+    firstLoad = false;
+  }
+  function load() {
+    fetch("data.json?t=" + Date.now(), { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(function (d) { ingest(d); loadErr = null; renderAll(); })
+      .catch(function (e) { loadErr = String((e && e.message) || e); renderAll(); });
+  }
+
+  function copiedBy(g) {
+    var side = sideOf(g.dir); if (!side || !isOpenDir(g.dir)) return null;
+    function hit(p) { return p.tag === g.tag && p.coin === g.coin && p.side === side && p.opened_at >= g.first - 60000 && p.opened_at <= g.last + 60000; }
+    if ((DATA.open || []).some(hit)) return { closed: false };
+    if ((DATA.closed || []).some(hit)) return { closed: true };
+    return null;
+  }
+  function autoText(g, d) {
+    var side = sideOf(g.dir), v = verdict(d, g), rk = riskOf(d, g), sc = d.score, pro = [], con = [], cs = d.coins[g.coin + "|" + side], mk = marks[g.coin], avgPx = g.usd / g.size;
+    if (sc) { if (sc.total >= 65) pro.push("امتیاز کلی نهنگ بالاست (" + sc.total + " از ۱۰۰)"); else if (sc.total < 45) con.push("امتیاز کلی نهنگ پایینه (" + sc.total + " از ۱۰۰)"); }
+    if (cs && cs.n >= 8) { var r = cs.w / cs.n; if (r >= 0.6) pro.push("روی " + g.coin + " " + (side === "long" ? "لانگ" : "شورت") + " " + Math.round(r * 100) + "٪ پوزیشن‌هاش سودده بوده (" + cs.n + " تا)"); else if (r < 0.45) con.push("روی همین کوین و جهت فقط " + Math.round(r * 100) + "٪ برده (" + cs.n + " تا)"); }
+    else con.push("روی همین کوین و جهت داده‌ی کافی نداره (کمتر از ۸ پوزیشن)");
+    if (d.prof) { if (d.prof.payoff >= 1.2) pro.push("میانگین بردش " + d.prof.payoff.toFixed(1) + " برابر میانگین باختشه"); else if (d.prof.payoff < 0.8) con.push("میانگین باختش از میانگین بردش بزرگ‌تره (نسبت " + d.prof.payoff.toFixed(2) + ")"); }
+    if (rk) { if (rk.pct >= 50) con.push("احتمال تاریخی باخت حدود " + rk.pct + "٪ بوده"); else if (rk.pct <= 30) pro.push("احتمال تاریخی باخت فقط حدود " + rk.pct + "٪ بوده"); }
+    weakLines(d).filter(function (x) { return x.bad; }).slice(0, 2).forEach(function (x) { con.push(x.t); });
+    if (g.usd < 2000) con.push("حجم کوچکه (" + usd(g.usd) + ")؛ ممکنه تست یا پوشش ریسک باشه");
+    if (mk && mk.px > 0) {
+      var cost = (side === "long" ? mk.px - avgPx : avgPx - mk.px) / avgPx * 100;
+      if (cost > 0.3) con.push("قیمت الان حدود " + cost.toFixed(2) + "٪ بدتر از ورود نهنگه (ربات با قیمت فعلی وارد می‌شه)");
+      else if (cost < -0.3) pro.push("قیمت الان حدود " + Math.abs(cost).toFixed(2) + "٪ بهتر از ورود نهنگه");
+    }
+    var ageMin = (Date.now() - g.last) / 60000;
+    if (ageMin > 30) con.push("این حرکت " + (ageMin < 120 ? Math.round(ageMin) + " دقیقه" : Math.round(ageMin / 60) + " ساعت") + " پیش بوده");
+    var out = [];
+    out.push("برچسب سابقه: " + v.label + ".");
+    if (pro.length) out.push("به نفع: " + pro.join("؛ ") + ".");
+    if (con.length) out.push("علیه: " + con.join("؛ ") + ".");
+    out.push(con.length >= pro.length + 2 ? "جمع‌بندی آماری: شواهد علیه بیشتره؛ اگر کپی می‌کنی مارجین کوچک‌تر بذار." : pro.length >= con.length + 2 ? "جمع‌بندی آماری: شواهد به نفع بیشتره، ولی این فقط گذشته‌ست." : "جمع‌بندی آماری: شواهد متعادله.");
+    return out.join("\n");
+  }
+
+  function renderAll() {
+    if (touching) { pending = true; return; }
+    pending = false; renderBanner();
+    if (!DATA) return;
+    var wf = Date.now() - winH * 3600000;
+    renderFeed(SETS.whale, "feed", function (g) { return g.usd >= minUsd && g.last >= wf && (!onlyOpen || isOpenDir(g.dir)); });
+    renderFeed(SETS.hw, "hw-feed", function () { return true; });
+    renderFeed(SETS.gold, "gold-feed", function (g) { return /gold/i.test(g.coin); });
+    renderWallets(SETS.whale, "wallets"); renderWallets(SETS.hw, "hw-wallets"); renderWallets(SETS.gold, "gold-wallets"); renderPaper();
+  }
+  function renderBanner() {
+    var strip = $("strip"), banner = $("banner"), txt = $("banner-text"); strip.textContent = "";
+    if (!DATA) { banner.hidden = !loadErr; txt.textContent = loadErr ? "داده‌ی ربات نیومد (" + loadErr + "). چند دقیقه بعد دوباره باز کن." : ""; return; }
+    SETS.whale.forEach(function (w) {
+      var s = W[w.addr], c = el("span", "chip " + (s.status === "ok" ? "ok" : "err")); c.appendChild(el("i")); c.appendChild(el("span", null, w.tag));
+      c.appendChild(el("span", "sub", s.status === "ok" ? ago(s.at) : "خطا")); strip.appendChild(c);
+    });
+    var stale = Date.now() - DATA.updated > 100 * 60000;
+    if (loadErr) { banner.hidden = false; txt.textContent = "تازه‌سازی صفحه خطا داد (" + loadErr + "). داده‌ی قبلی نشان داده می‌شه."; }
+    else if (stale) { banner.hidden = false; txt.textContent = "ربات حدود " + ago(DATA.updated).replace(" پیش", "") + " است که چیزی ننوشته. GitHub گاهی اجرا را عقب می‌اندازد؛ از تب Actions می‌شه وضعیتش را دید."; }
+    else banner.hidden = true;
+    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated);
+  }
+  function renderFeed(set, feedId, flt) {
+    var all = [];
+    set.forEach(function (w) { all = all.concat(W[w.addr].groups); });
+    all = all.filter(flt).sort(function (a, b) { return b.last - a.last; }).slice(0, 50);
+    var feed = $(feedId); feed.textContent = "";
+    var anyOk = set.some(function (w) { return W[w.addr].status === "ok"; });
+    if (!all.length) { feed.appendChild(el("p", "empty", anyOk ? (feedId === "hw-feed" ? "در ۳ روز اخیر معامله‌ای از این چهار کیف‌پول نبوده. اینها کم‌معامله‌اند و صبر لازم داره." : "در این بازه حرکتی با این فیلتر نبوده. فیلتر رو شل‌تر کن.") : "در حال گرفتن داده...")); return; }
+    all.forEach(function (g) {
+      var d = W[g.addr], isNew = newAt[g.id] && Date.now() - newAt[g.id] < 10 * 60000;
+      var c = el("article", "card" + (isNew ? " new" : ""));
+      var r1 = el("div", "row"), a = el("a", "who", g.tag + "…"); a.href = "https://app.hyperliquid.xyz/explorer/" + g.addr; a.target = "_blank"; a.rel = "noopener";
+      r1.appendChild(a);
+      var wh = el("span", "when"); wh.appendChild(el("span", "num", clock(g.last))); wh.appendChild(document.createTextNode(" · " + ago(g.last))); r1.appendChild(wh); c.appendChild(r1);
+      var h = el("div", "head");
+      h.appendChild(el("span", "side " + (g.side === "BUY" ? "buy" : "sell"), g.side === "BUY" ? "خرید" : "فروش"));
+      h.appendChild(el("span", "coin", g.coin)); h.appendChild(el("span", "dir", dirFa(g.dir)));
+      if (isNew) h.appendChild(el("span", "pill", "جدید")); else if (Date.now() - g.last < 120000) h.appendChild(el("span", "pill", "در جریان"));
+      c.appendChild(h);
+      var st = el("div", "stats"), avg = g.usd / g.size;
+      stat(st, "حجم", usd(g.usd)); stat(st, "قیمت متوسط", price(avg)); stat(st, "تکه‌ها", String(g.n));
+      if (isCloseDir(g.dir) && g.pnl) stat(st, "سود/زیان", (g.pnl >= 0 ? "+" : "-") + usd(g.pnl), g.pnl >= 0 ? "up" : "down");
+      var after = g.lf.start + (g.lf.side === "BUY" ? g.lf.sz : -g.lf.sz);
+      if (isFinite(after) && g.lf.start) {
+        if (Math.abs(after) * g.lf.px < 5) stat(st, "پوزیشن بعدش", "کامل بسته شد");
+        else stat(st, "پوزیشن بعدش ≈", (after < 0 ? "شورت " : "لانگ ") + qty(after) + " (" + usd(Math.abs(after) * g.lf.px) + ")");
+      }
+      c.appendChild(st);
+
+      if (isOpenDir(g.dir)) {
+        var v = verdict(d, g), rec = el("div", "rec"), line = el("div", "head");
+        line.appendChild(el("span", "pill " + v.lvl, v.label));
+        if (d.score) line.appendChild(el("span", "sub", "امتیاز نهنگ " + d.score.total + " از ۱۰۰"));
+        rec.appendChild(line); if (v.why) rec.appendChild(el("p", "why", v.why));
+        var rk = riskOf(d, g);
+        if (rk) {
+          var rl = el("div", "head"); rl.appendChild(el("span", "pill " + rk.lvl, "احتمال تاریخی باخت ≈ " + rk.pct + "٪")); rl.appendChild(el("span", "sub", "(بازه " + rk.lo + " تا " + rk.hi + "٪)")); rec.appendChild(rl);
+          rec.appendChild(el("p", "sub", "مبنا: " + rk.basis + ". این نرخ باختِ مشابهِ قبلیه، پیش‌بینی این معامله نیست."));
+          var wl = weakLines(d).filter(function (x) { return x.bad; }).slice(0, 2);
+          wl.forEach(function (x) { rec.appendChild(el("p", "why", "⚠ " + x.t)); });
+        }
+        var acts = el("div", "acts"), cp = copiedBy(g);
+        if (cp) acts.appendChild(el("span", "pill good", cp.closed ? "ربات این را کپی کرده بود" : "ربات کپی کرد ✓"));
+        else if (g.first < (DATA.started || 0)) acts.appendChild(el("span", "pill", "قبل از شروع ربات بود"));
+        else if (g.usd < (DATA.settings.min_usd || 0)) acts.appendChild(el("span", "pill", "زیر حداقل حجم کپی (" + usd(DATA.settings.min_usd) + ")"));
+        else acts.appendChild(el("span", "pill mid", "کپی نشد (جا/موجودی نبود یا هنوز ثبت نشده)"));
+        var ab = el("button", "btn", aiOpen[g.id] ? "بستن تحلیل" : "تحلیل خودکار"); ab.type = "button";
+        ab.addEventListener("click", function () { aiOpen[g.id] = !aiOpen[g.id]; renderAll(); }); acts.appendChild(ab);
+        rec.appendChild(acts);
+        if (aiOpen[g.id]) { rec.appendChild(el("p", "ai", autoText(g, d))); rec.appendChild(el("p", "sub", "این تحلیل قانون‌محور است و از همان آمار بالا ساخته می‌شود؛ هوش مصنوعی نیست و احتمال واقعی برد نیست.")); }
+        c.appendChild(rec);
+      }
+      feed.appendChild(c);
+    });
+  }
+  function renderWallets(set, boxId) {
+    var box = $(boxId); box.textContent = "";
+    var arr = set.slice().sort(function (a, b) { return ((W[b.addr].score || { total: -1 }).total) - ((W[a.addr].score || { total: -1 }).total); });
+    arr.forEach(function (w) {
+      var d = W[w.addr], sm = d.sum, c = el("article", "card");
+      var r = el("div", "row"), a = el("a", "who", w.addr.slice(0, 8) + "…" + w.addr.slice(-4) + " (" + w.tag + ")"); a.href = "https://app.hyperliquid.xyz/explorer/" + w.addr; a.target = "_blank"; a.rel = "noopener";
+      r.appendChild(a);
+      var sc = d.score; var s = el("div", "score " + (sc ? lvlOf(sc.total) : "")); s.appendChild(el("b", "num", sc ? String(sc.total) : "—")); s.appendChild(el("span", "sub", "از ۱۰۰")); r.appendChild(s); c.appendChild(r);
+      if (!sm) { c.appendChild(el("p", "sub", d.noHist ? "در ۹۰ روز اخیر پوزیشن بسته‌شده‌ای از این کیف‌پول پیدا نشد." : "سابقه هنوز محاسبه نشده. ربات هر ۵ دقیقه ۲ کیف‌پول را پردازش می‌کند، پس تا حدود نیم ساعت بعد از اولین اجرا همه‌شان کامل می‌شوند.")); box.appendChild(c); return; }
+      var fac = el("div", "fac");
+      sc.f.forEach(function (f) { fac.appendChild(el("span", null, f.label)); fac.appendChild(el("b", "num", f.val)); var b = el("div", "bar"), i = el("i"); i.style.width = Math.round(100 * f.pts / f.max) + "%"; b.appendChild(i); fac.appendChild(b); });
+      c.appendChild(fac);
+      var g2 = el("div", "grid2"), tot = num(sm.totalPnl);
+      stat(g2, "سود بسته‌ها", (tot >= 0 ? "+" : "-") + usd(tot), tot >= 0 ? "up" : "down");
+      stat(g2, "وین‌ریت پوزیشن", Math.round(num(sm.winRate)) + "٪");
+      stat(g2, "بزرگ‌ترین برد", "+" + usd(num(sm.biggestWin))); stat(g2, "بدترین باخت", "-" + usd(Math.abs(num(sm.biggestLoss))), "down");
+      stat(g2, "سهم بزرگ‌ترین برد از سود", tot > 0 ? Math.round(100 * num(sm.biggestWin) / tot) + "٪" : "—");
+      stat(g2, "بدترین باخت چند درصد سود", tot > 0 ? Math.round(100 * Math.abs(num(sm.biggestLoss)) / tot) + "٪" : "—");
+      stat(g2, "میانگین نگه‌داری", dur(num(sm.avgDurationMs))); stat(g2, "پوزیشن باز الان", String(num(sm.open)));
+      c.appendChild(g2);
+      if (d.top.length) {
+        var tl = el("p", "sub", "کوین‌های اصلی: " + d.top.map(function (t) { return t.coin + " (" + t.n + "، " + Math.round(100 * t.w / t.n) + "٪)"; }).join(" · ")); c.appendChild(tl);
+      } else if (d.lcErr) c.appendChild(el("p", "sub", "سابقه‌ی کوین‌ها نیومد (" + d.lcErr + ")."));
+      var warn = [];
+      if (sc.days > 5) warn.push("آخرین فعالیت " + Math.round(sc.days) + " روز پیش بوده.");
+      if (num(sm.liquidations) >= 3) warn.push(num(sm.liquidations) + " بار تصفیه شده.");
+      if (tot > 0 && Math.abs(num(sm.biggestLoss)) > 0.5 * tot) warn.push("یک باخت بزرگ بیش از نصف کل سودش رو خورده.");
+      if (tot > 0 && num(sm.biggestWin) > 0.5 * tot) warn.push("بیش از نصف سودش از یک معامله‌ست.");
+      if (num(sm.closed) < 100) warn.push("تعداد پوزیشن بسته‌ش کمه (" + num(sm.closed) + ").");
+      warn.forEach(function (t) { c.appendChild(el("span", "pill bad", t)); });
+      var wk = weakLines(d);
+      if (wk.length) {
+        c.appendChild(el("h2", null, "نقطه‌ضعف‌ها و الگوی باخت"));
+        wk.forEach(function (x) { c.appendChild(el("p", "why", (x.bad ? "⚠ " : "✓ ") + x.t)); });
+        c.appendChild(el("p", "sub", "از " + d.prof.n + " پوزیشن کامل‌شده در ۹۰ روز اخیر که ربات از تاریخچه‌ی عمومی Hyperliquid بازسازی کرده (به‌روزشده " + ago(d.histAt) + ")."));
+      } else if (d.lc0) c.appendChild(el("p", "sub", "برای تحلیل نقطه‌ضعف داده‌ی کافی نیست."));
+      box.appendChild(c);
+    });
+  }
+  function calcU(p, mark) { var n = p.margin * p.lev, d = p.side === "long" ? 1 : -1; return n * d * (mark - p.entry) / p.entry - n * 0.00045 * 2; }
+  function renderPaper() {
+    if (!DATA) return;
+    var eq = DATA.equity, pct = clamp((eq - START) / (GOAL - START)) * 100, S = DATA.settings;
+    $("p-eq").textContent = money(eq); $("p-bar").style.width = pct.toFixed(1) + "%"; $("p-pct").textContent = pct.toFixed(0) + "٪ از مسیر هدف";
+    $("p-day").textContent = "روز " + Math.min(30, Math.floor((Date.now() - (DATA.started || Date.now())) / 86400000) + 1) + " از ۳۰";
+    var ps = $("p-stats"); ps.textContent = "";
+    var closed = DATA.closed || [], wins = closed.filter(function (t) { return t.pnl > 0; }).length, used = (DATA.open || []).reduce(function (s, p) { return s + p.margin; }, 0);
+    stat(ps, "بسته‌شده (۶۰ تای آخر)", String(closed.length)); stat(ps, "وین‌ریت", closed.length ? Math.round(100 * wins / closed.length) + "٪" : "—");
+    stat(ps, "موجودی بسته‌ها", money(DATA.balance)); stat(ps, "آزاد برای کپی", money(Math.max(0, DATA.balance - used)));
+    $("p-rules").textContent = "ربات خودش و بدون دکمه کپی می‌کنه: هر ورودِ هر کدوم از ۱۱ کیف‌پول که حجمش از " + usd(S.min_usd) + " بیشتر باشه، با مارجین " + money(S.margin) + " و لوریج " + S.leverage + "x و حداکثر " + S.max_open + " پوزیشن هم‌زمان. ورود با قیمت فعلی و ۰٫۰۳٪ لغزش بدتر، کارمزد ۰٫۰۴۵٪ هر طرف، تصفیه در ۹۰٪ ضرر مارجین. وقتی نهنگ کل پوزیشنش رو بست، پوزیشن مجازی هم بسته می‌شه. این عددها داخل فایل config.json هستن.";
+    var ol = $("p-open"); ol.textContent = "";
+    if (!(DATA.open || []).length) ol.appendChild(el("p", "empty", "هنوز ربات پوزیشنی باز نکرده. وقتی نهنگی ورود بزرگ داشته باشه خودکار اینجا میاد."));
+    (DATA.open || []).forEach(function (p) {
+      var c = el("article", "card"), m = p.mark, u = p.upnl, r = el("div", "row");
+      r.appendChild(el("strong", null, p.coin + " " + (p.side === "long" ? "لانگ" : "شورت") + " " + p.lev + "x"));
+      r.appendChild(el("span", "num " + (u == null ? "sub" : u >= 0 ? "up" : "down"), u == null ? "قیمت نیومد" : (u >= 0 ? "+" : "-") + money(Math.abs(u)).replace("-", ""))); c.appendChild(r);
+      c.appendChild(el("p", "sub num", "ورود " + price(p.entry) + (m ? " · الان " + price(m) : "") + " · مارجین " + money(p.margin) + " · کپی از " + p.tag + " · " + ago(p.opened_at)));
+      ol.appendChild(c);
+    });
+    var cl = $("p-closed"); cl.textContent = "";
+    if (!closed.length) cl.appendChild(el("p", "empty", "هنوز چیزی بسته نشده."));
+    closed.slice(0, 30).forEach(function (t) {
+      var c = el("article", "card"), r = el("div", "row");
+      r.appendChild(el("strong", null, t.coin + " " + (t.side === "long" ? "لانگ" : "شورت") + " " + t.lev + "x"));
+      r.appendChild(el("span", "num " + (t.pnl >= 0 ? "up" : "down"), (t.pnl >= 0 ? "+" : "-") + money(Math.abs(t.pnl)).replace("-", ""))); c.appendChild(r);
+      c.appendChild(el("p", "sub num", price(t.entry) + " ← " + price(t.exit) + " · " + (t.reason === "whale" ? "نهنگ بست" : t.reason === "liq" ? "تصفیه" : "دستی") + " · از " + t.tag + " · " + ago(t.closed_at)));
+      cl.appendChild(c);
+    });
+    var ev = $("p-events"); ev.textContent = "";
+    (DATA.events || []).slice(0, 15).forEach(function (e) { var r = el("p", "sub"); r.appendChild(el("span", "num", clock(e.t) + " ")); r.appendChild(document.createTextNode(e.text)); ev.appendChild(r); });
+    if (!(DATA.events || []).length) ev.appendChild(el("p", "empty", "هنوز رویدادی نبوده."));
+  }
+
+  /* ---------- controls ---------- */
+  var sel = $("min-usd"); sel.value = String(minUsd); if (sel.value !== String(minUsd)) { sel.value = "500"; minUsd = 500; }
+  sel.addEventListener("change", function () { minUsd = Number(sel.value) || 0; try { localStorage.setItem("whale-gh-min", String(minUsd)); } catch (e) {} renderAll(); });
+  var wsel = $("win-h"); wsel.value = String(winH); if (wsel.value !== String(winH)) { wsel.value = "24"; winH = 24; }
+  wsel.addEventListener("change", function () { winH = Number(wsel.value) || 24; try { localStorage.setItem("whale-gh-win", String(winH)); } catch (e) {} renderAll(); });
+  $("only-open").addEventListener("change", function () { onlyOpen = $("only-open").checked; renderAll(); });
+  var TABS = { feed: $("t-feed"), wallets: $("t-wallets"), paper: $("t-paper"), hw: $("t-hw"), gold: $("t-gold") }, VIEWS = { feed: $("v-feed"), wallets: $("v-wallets"), paper: $("v-paper"), hw: $("v-hw"), gold: $("v-gold") };
+  function show(name) { if (!TABS[name]) name = "feed"; Object.keys(TABS).forEach(function (k) { TABS[k].setAttribute("aria-selected", String(k === name)); VIEWS[k].hidden = k !== name; }); }
+  Object.keys(TABS).forEach(function (k) { TABS[k].addEventListener("click", function () { show(k); try { location.hash = k; } catch (e) {} }); });
+  try { show((location.hash || "").replace("#", "")); window.addEventListener("hashchange", function () { show((location.hash || "").replace("#", "")); }); } catch (e) { show("feed"); }
+  document.addEventListener("pointerdown", function () { touching = true; }, true);
+  function release() { setTimeout(function () { touching = false; if (pending) renderAll(); }, 60); }
+  document.addEventListener("pointerup", release, true); document.addEventListener("pointercancel", release, true);
+
+  /* ---------- start ---------- */
+  var HW = [
+    { a: "0x850ff4a5ea18d06b431ac984173395b6d00a435c", n: 31, wr: 64.5, pnl: 28380, last: "11-19", v: "good", note: "نمونه‌ی متوسط، وین‌ریت واقعی قابل قبول و هنوز فعال." },
+    { a: "0x34f09a89bdfbefb509b3e1c80891a750a22a1119", n: 37, wr: 54.1, pnl: 79175, last: "11-21", v: "good", note: "وین‌ریت معمولی ولی میانگین بردش خیلی بزرگ‌تر از باخته (میانگین پوزیشن حدود ۲۱هزار دلار سود). نمونه کم." },
+    { a: "0x7256bdc5b2dce2600f79b1fd1469e80357936e98", n: 67, wr: 55.2, pnl: 62249, last: "11-18", v: "good", note: "نمونه‌ی بیشتر (۶۷ پوزیشن)، سوداور و فعال. از همه قابل‌اعتمادتر در این لیست." },
+    { a: "0xbd8a4f1170abd4fcb3422d60ea1d005eb2bddcf1", n: 693, wr: 51.1, pnl: 327811, last: "11-19", v: "good", note: "بزرگ‌ترین نمونه (۶۹۳ پوزیشن) و سوداور؛ ولی وین‌ریتش تقریباً شیر و خطه. سودش از بردهای بزرگه." },
+    { a: "0x5c90517b85ae5a59a49072b0ce09e7af4b2b44ce", n: 8, wr: 87.5, pnl: 169308, last: "11-20", v: "mid", note: "وین‌ریت ۸۷٫۵٪ ولی فقط ۸ پوزیشن داره. برای قضاوت خیلی کمه و پوزیشن‌هاش طولانی‌مدت (میانگین حدود ۱۷ روز)." },
+    { a: "0xc4005d03f605a5d0d2fc9afa4cf057d7c3ca9922", n: 147, wr: 46.3, pnl: 67827, last: "11-22", v: "mid", note: "وین‌ریت کمتر از نیمه، ولی سوداور و الان فعال." },
+    { a: "0x32a501193fe8789b2093e03e698e5ca979c9cd92", n: 50, wr: 46, pnl: 37645, last: "11-17", v: "mid", note: "وین‌ریت کمتر از نیمه، سوداور." },
+    { a: "0xf9133968eb479dc1a2c4ffa6faba274d2258b799", n: 3, wr: 66.7, pnl: 1385, last: "10-14", v: "bad", note: "وین‌ریت فیل: ۸۵٪ (۲۱۰۹ فیل) ولی فقط ۳ پوزیشن و در ۹۰ روز اخیر تقریباً فعال نبوده. مثالِ وهم." },
+    { a: "0x83f866c2f6aabe98862972a69f3c0f69bcc1a804", n: 1, wr: 0, pnl: -715, last: "10-09", v: "bad", note: "وین‌ریت فیل: ۹۲٪ (۲۶۱۴ فیل) ولی این‌ها فقط یک پوزیشنِ باخته! مثالِ وهم." },
+    { a: "0x1069651a1cb08a000ca3c3b15f6ed435454a21e9", n: 8, wr: 37.5, pnl: 138537, last: "11-20", v: "bad", note: "وین‌ریت فیل ۱۰۰٪ ولی وین‌ریت پوزیشن فقط ۳۷٫۵٪ از ۸ پوزیشن." }
+  ];
+  function renderHW() {
+    var box = $("hw-list"); box.textContent = "";
+    HW.filter(function (x) { return x.v === "good"; }).forEach(function (x) {
+      var c = el("article", "card"), r = el("div", "row");
+      var a = el("a", "who", x.a.slice(0, 8) + "…" + x.a.slice(-4)); a.href = "https://app.hyperliquid.xyz/explorer/" + x.a; a.target = "_blank"; a.rel = "noopener"; r.appendChild(a);
+      r.appendChild(el("span", "pill " + x.v, x.v === "good" ? "قابل بررسی" : x.v === "mid" ? "نمونه کم یا متوسط" : "وهمِ وین‌ریت")); c.appendChild(r);
+      var g = el("div", "grid2");
+      stat(g, "وین‌ریت واقعی (پوزیشن)", x.wr + "٪"); stat(g, "تعداد پوزیشن", String(x.n));
+      stat(g, "سود ۹۰ روز", (x.pnl >= 0 ? "+" : "-") + usd(x.pnl), x.pnl >= 0 ? "up" : "down"); stat(g, "آخرین بستن", x.last);
+      c.appendChild(g); c.appendChild(el("p", "why", x.note)); box.appendChild(c);
+    });
+    $("hw-note").textContent = "این لیست یک عکسِ ثابت از ۲۲ نوامبر ۲۰۲۶ است (از دیتای Coinversa) و خودش به‌روز نمی‌شه. ملیت یا هویت صاحب کیف‌پول (مثلاً ژاپنی بودن) از داده معلوم نیست. وین‌ریت و سود گذشته تضمین آینده نیست.";
+  }
+  renderHW();
+  load(); setInterval(load, 60000); setInterval(function () { if (DATA) renderAll(); }, 30000);
+})();
+</script>
+</body>
+</html>
