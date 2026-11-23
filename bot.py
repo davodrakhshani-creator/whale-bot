@@ -14,7 +14,7 @@ HEARTBEAT_S = 3600
 HIST_F = os.path.join(ROOT, "history.json")
 HIST_DAYS = 90
 HIST_TTL = 6 * 3600 * 1000      # refresh a wallet's 90-day record every 6h
-HIST_PER_RUN = 2                # wallets refreshed per run (keeps API weight under the limit)
+HIST_PER_RUN = 11               # wallets refreshed per run (keeps API weight under the limit)
 HIST_MAX_PAGES = 6              # 2000 fills per page
 GAP = 5 * 60 * 1000             # same coin+direction fills closer than this = one move
 FEED_WINDOW = 72 * 3600 * 1000
@@ -262,7 +262,10 @@ def refresh_history(hist, cfg, now):
     due = [w for w in cfg["wallets"] if now - ws.get(w["addr"], {}).get("at", 0) > HIST_TTL]
     due.sort(key=lambda w: ws.get(w["addr"], {}).get("at", 0))
     changed = False
+    t0 = time.time()
     for w in due[:HIST_PER_RUN]:
+        if time.time() - t0 > 420:  # time budget; the rest continues next run
+            break
         try:
             res = analyze(fetch_history(w["addr"], now)) or {"empty": True}
             ws[w["addr"]] = {"at": now, **res}
