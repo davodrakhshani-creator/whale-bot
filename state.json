@@ -1,5 +1,5 @@
 {
- "balance": 1068.163477573646,
+ "balance": 1069.0207398778907,
  "open": {
   "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|PUMP|short": {
    "key": "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|PUMP|short",
@@ -177,20 +177,6 @@
    "opened_at": 1795534013999,
    "whale_usd": 32364.7495
   },
-  "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9|BTC|short": {
-   "key": "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9|BTC|short",
-   "tag": "a70a",
-   "group": "طلا",
-   "coin": "BTC",
-   "src": "BTC",
-   "side": "short",
-   "entry": 59966.50465,
-   "whale_px": 60030.0,
-   "margin": 50,
-   "lev": 5,
-   "opened_at": 1795547788263,
-   "whale_usd": 2311.155000000002
-  },
   "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|xyz:SP500|long": {
    "key": "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|xyz:SP500|long",
    "tag": "c191",
@@ -204,6 +190,20 @@
    "lev": 5,
    "opened_at": 1795550507781,
    "whale_usd": 2101.9527000000003
+  },
+  "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9|BTC|long": {
+   "key": "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9|BTC|long",
+   "tag": "a70a",
+   "group": "طلا",
+   "coin": "BTC",
+   "src": "BTC",
+   "side": "long",
+   "entry": 59703.40565,
+   "whale_px": 59689.0,
+   "margin": 50,
+   "lev": 5,
+   "opened_at": 1795551109402,
+   "whale_usd": 27702.26179
   }
  },
  "closed": [
@@ -328,6 +328,24 @@
    "pnl": -0.16876171355959282,
    "closed_at": 1795547788263,
    "reason": "whale"
+  },
+  {
+   "key": "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9|BTC|short",
+   "tag": "a70a",
+   "group": "طلا",
+   "coin": "BTC",
+   "src": "BTC",
+   "side": "short",
+   "entry": 59966.50465,
+   "whale_px": 60030.0,
+   "margin": 50,
+   "lev": 5,
+   "opened_at": 1795547788263,
+   "whale_usd": 2311.155000000002,
+   "exit": 59706.9067,
+   "pnl": 0.8572623042445539,
+   "closed_at": 1795551109402,
+   "reason": "whale"
   }
  ],
  "pending": {
@@ -352,18 +370,10 @@
   "0x34f09a89bdfbefb509b3e1c80891a750a22a1119": 1795371179100,
   "0x7256bdc5b2dce2600f79b1fd1469e80357936e98": 1795413632500,
   "0xbd8a4f1170abd4fcb3422d60ea1d005eb2bddcf1": 1795514744136,
-  "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9": 1795550605085,
-  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37": 1795550851400
+  "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9": 1795551109402,
+  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37": 1795551143421
  },
  "events": [
-  {
-   "t": 1795443255360,
-   "text": "c191 باز کرد CRV short (~$3,809) ولی سقف 15 پوزیشن باز پر بود"
-  },
-  {
-   "t": 1795442709502,
-   "text": "c191 باز کرد xyz:SMSN short (~$51,757) ولی سقف 15 پوزیشن باز پر بود"
-  },
   {
    "t": 1795444004781,
    "text": "c191 باز کرد xyz:TSM short (~$12,348) ولی سقف 15 پوزیشن باز پر بود"
@@ -1155,8 +1165,16 @@
   {
    "t": 1795550851400,
    "text": "c191 باز کرد HYPE long (~$3,982) ولی سقف 15 پوزیشن باز پر بود"
+  },
+  {
+   "t": 1795551109402,
+   "text": "کپی مجازی بسته شد (نهنگ بست): a70a BTC شورت سود/زیان +0.86$"
+  },
+  {
+   "t": 1795551109402,
+   "text": "کپی مجازی باز شد: a70a BTC لانگ ورود 59703.4 (حجم نهنگ ~$27,702)"
   }
  ],
- "data_ts": 1795551003006,
+ "data_ts": 1795551290191,
  "started": 1795416439329
 }
