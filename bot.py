@@ -23,7 +23,7 @@ FEED_MAX = 60
 CAND_PUB = os.path.join(ROOT, "docs", "candles.json")      # committed copy the page reads (refreshed every 15 min)
 CAND_WORK = os.path.join(ROOT, ".cache", "candles_work.json")  # working copy, updated every loop, not committed
 CAND_TFS = {"5m": 300000, "15m": 900000, "1h": 3600000, "4h": 14400000}
-CAND_N, CAND_TTL, CAND_PER_RUN, CAND_COINS, CAND_PUBLISH = 150, 12 * 60000, 3, 30, 15 * 60000
+CAND_N, CAND_TTL, CAND_PER_RUN, CAND_COINS, CAND_PUBLISH = 150, 12 * 60000, 6, 30, 15 * 60000
 FULL_PER_RUN = 5              # heavy full refreshes per loop (weight ~140 each)
 FULL_EVERY = 270 * 1000        # full feed refresh per wallet at most this often (the cheap new-fills check runs every loop)
 
@@ -544,7 +544,8 @@ def main():
             with open(CAND_WORK, "w", encoding="utf-8") as f:
                 json.dump(cw, f, separators=(",", ":"))
         pub = load(CAND_PUB, {})
-        if cw.get("series") and now - pub.get("written", 0) > CAND_PUBLISH and cw.get("series") != pub.get("series"):
+        filling = len(cw.get("series", {})) > len(pub.get("series", {}))  # still catching up: publish quickly
+        if cw.get("series") and now - pub.get("written", 0) > (3 * 60000 if filling else CAND_PUBLISH) and cw.get("series") != pub.get("series"):
             with open(CAND_PUB, "w", encoding="utf-8") as f:
                 json.dump({"written": now, "series": cw["series"]}, f, separators=(",", ":"))
     except Exception as e:
