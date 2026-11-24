@@ -120,7 +120,8 @@ input[type="number"] { width: 100%; min-width: 0; }
 .ov { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 50; display: flex; align-items: flex-end; justify-content: center; }
 .ov[hidden] { display: none; }
 .ovbox { background: var(--surface); color: var(--fg); width: 100%; max-width: 720px; max-height: 92vh; overflow: auto; border-radius: 16px 16px 0 0; padding: 14px; padding-bottom: max(14px, env(safe-area-inset-bottom, 0px)); }
-.chartbox { direction: ltr; width: 100%; min-height: 320px; margin: 8px 0; }
+.chartbox { direction: ltr; width: 100%; height: 320px; margin: 8px 0; }
+.chartbox canvas { width: 100%; height: 320px; display: block; touch-action: pan-y; }
 .chartlg { display: flex; flex-direction: column; gap: 2px; font-size: .78rem; }
 body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
 </style>
@@ -548,7 +549,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     pending = false; renderBanner();
     if (!DATA) return;
     var wf = Date.now() - winH * 3600000;
-    renderFeed(SETS.whale, "feed", function (g) { return g.usd >= minUsd && g.last >= wf && (!onlyOpen || isOpenDir(g.dir)); });
+    renderFeed(SETS.whale.concat(SETS.gold, SETS.hw), "feed", function (g) { return g.usd >= minUsd && g.last >= wf && (!onlyOpen || isOpenDir(g.dir)); });
     renderFeed(SETS.hw, "hw-feed", function () { return true; });
     renderFeed(SETS.gold, "gold-feed", function (g) { return /gold/i.test(g.coin); });
     renderFeed(SETS.scalp, "scalp-feed", function (g) { return isOpenDir(g.dir) && g.last >= Date.now() - 30 * 60000; });
@@ -566,7 +567,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     if (loadErr) { banner.hidden = false; txt.textContent = "تازه‌سازی صفحه خطا داد (" + loadErr + "). داده‌ی قبلی نشان داده می‌شه."; }
     else if (stale) { banner.hidden = false; txt.textContent = "ربات حدود " + ago(DATA.updated).replace(" پیش", "") + " است که چیزی ننوشته (معمولاً هر نیم ساعت حداقل یک‌بار می‌نویسه). احتمالاً اجرای GitHub متوقف شده؛ از تب Actions → whale-bot می‌شه دید و با Run workflow دوباره روشنش کرد."; }
     else banner.hidden = true;
-    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۱۲";
+    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۱۳";
   }
   function renderFeed(set, feedId, flt) {
     var all = [];
@@ -579,7 +580,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
       var d = W[g.addr], isNew = newAt[g.id] && Date.now() - newAt[g.id] < 10 * 60000;
       var c = el("article", "card" + (isNew ? " new" : ""));
       var r1 = el("div", "row"), a = el("a", "who", g.tag + "…"); a.href = "https://app.hyperliquid.xyz/explorer/" + g.addr; a.target = "_blank"; a.rel = "noopener";
-      r1.appendChild(a);
+      r1.appendChild(a); if (d.w && d.w.group && d.w.group !== "نهنگ") r1.appendChild(el("span", "pill", d.w.group));
       var wh = el("span", "when"); wh.appendChild(el("span", "num", clock(g.last))); wh.appendChild(document.createTextNode(" · " + ago(g.last))); r1.appendChild(wh); c.appendChild(r1);
       var h = el("div", "head");
       h.appendChild(el("span", "side " + (g.side === "BUY" ? "buy" : "sell"), g.side === "BUY" ? "خرید" : "فروش"));
@@ -741,39 +742,25 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
   }
   renderHW();
 
-  /* ---------- chart (Lightweight Charts) ---------- */
-  var LWC = null, chartState = null;
-  function loadLib() {
-    if (window.LightweightCharts) return Promise.resolve();
-    if (LWC) return LWC;
-    LWC = new Promise(function (res, rej) { var s = document.createElement("script"); s.src = "https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"; s.onload = res; s.onerror = function () { LWC = null; rej(new Error("کتابخانه‌ی چارت لود نشد")); }; document.head.appendChild(s); });
-    return LWC;
-  }
-  function levelsFor(g) {
-    var d = W[g.addr], side = sideOf(g.dir), open = isOpenDir(g.dir), avg = g.usd / g.size, L = [];
-    var buyish = g.side === "BUY";
-    L.push({ price: avg, color: buyish ? "#16a34a" : "#dc2626", title: (open ? "ورود نهنگ" : "خروج نهنگ") + " (" + (side === "long" ? "لانگ" : "شورت") + ")", style: 0 });
-    var closeSide = side === "long" ? "A" : "B", found = false;
-    if (open) (d.orders || []).forEach(function (o) {
-      if (o.coin !== g.coin || o.side !== closeSide) return;
-      var tp = /take/i.test(o.type) || (side === "long" ? o.px > avg : o.px < avg), nm = tp ? "تارگت نهنگ" : "استاپ نهنگ";
-      var pct = Math.abs(o.px - avg) / avg * 100;
-      L.push({ price: o.px, color: tp ? "#2563eb" : "#f59e0b", title: nm + " (" + pct.toFixed(1) + "٪)", style: 2 }); found = true;
-    });
-    return { lines: L, found: found, open: open };
-  }
-
+  /* ---------- chart: own canvas candlesticks (no external library, so it cannot fail to load) ---------- */
+  var TFMS = { "5m": 300000, "15m": 900000, "1h": 3600000, "4h": 14400000 }, HL = "https://api.hyperliquid.xyz/info";
   function ema(a, n) { var k = 2 / (n + 1), o = [], p = 0; a.forEach(function (v, i) { p = i ? v * k + p * (1 - k) : v; o.push(p); }); return o; }
   function rsiAt(c, i, n) { if (i < n) return null; var g = 0, l = 0, j; for (j = i - n + 1; j <= i; j++) { var d = c[j] - c[j - 1]; if (d > 0) g += d; else l -= d; } return l === 0 ? 100 : 100 - 100 / (1 + g / l); }
   function durTxt(ms) { var h = ms / 3600000; return h < 1 ? Math.round(h * 60) + " دقیقه" : h < 48 ? h.toFixed(1) + " ساعت" : (h / 24).toFixed(1) + " روز"; }
-  function tfFor(d) { var ms = d && d.sum ? d.sum.avgDurationMs : 0; if (!ms) return { tf: "15m", why: "سابقه‌ی کافی از این نهنگ هنوز ساخته نشده؛ تایم‌فریم پیش‌فرض ۱۵ دقیقه است." }; var tf = ms < 2 * 3600000 ? "5m" : ms < 12 * 3600000 ? "15m" : ms < 72 * 3600000 ? "1h" : "4h"; return { tf: tf, why: "میانگین نگه‌داری پوزیشن این نهنگ " + durTxt(ms) + " است؛ پس تایم‌فریم " + tf + " به رفتارش نزدیک‌تر است." }; }
-  /* what the chart looked like at the whale's entry (objective context, not the whale's intent) */
+  function tfFor(d) {
+    var ms = d && d.sum ? d.sum.avgDurationMs : 0;
+    if (!ms) return { tf: "15m", why: "سابقه‌ی کافی از این نهنگ هنوز ساخته نشده؛ تایم‌فریم پیش‌فرض ۱۵ دقیقه است." };
+    var tf = ms < 2 * 3600000 ? "5m" : ms < 12 * 3600000 ? "15m" : ms < 72 * 3600000 ? "1h" : "4h";
+    return { tf: tf, why: "میانگین نگه‌داری پوزیشن این نهنگ " + durTxt(ms) + " است؛ پس تایم‌فریم " + tf + " به رفتارش نزدیک‌تر است. (برداشت از سابقه‌ی او؛ خود نهنگ تایم‌فریمش را اعلام نمی‌کند.)" };
+  }
+  function entryIndex(cs, g) { var idx = -1, i; for (i = 0; i < cs.length; i++) if (cs[i].t <= g.first) idx = i; return idx; }
+  /* what the chart looked like at the whale's entry: objective context, not the whale's intent */
   function entryPattern(cs, g) {
-    var side = sideOf(g.dir), avg = g.usd / g.size, idx = -1, i;
-    for (i = 0; i < cs.length; i++) if (cs[i].t <= g.first) idx = i;
-    if (idx < 30) return null;
-    var cl = cs.map(function (c) { return +c.c; }), e20 = ema(cl, 20), e50 = ema(cl, 50), hh = -1e18, ll = 1e18;
-    for (i = idx - 20; i < idx; i++) { hh = Math.max(hh, +cs[i].h); ll = Math.min(ll, +cs[i].l); }
+    var side = sideOf(g.dir), avg = g.usd / g.size, idx = entryIndex(cs, g), i;
+    var cl = cs.map(function (c) { return c.c; }), e20 = ema(cl, 20), e50 = ema(cl, 50);
+    if (idx < 25) return { e20: e20, e50: e50, list: [], lines: [], short: true };
+    var hh = -1e18, ll = 1e18;
+    for (i = idx - 20; i < idx; i++) { hh = Math.max(hh, cs[i].h); ll = Math.min(ll, cs[i].l); }
     var long = side === "long", r = rsiAt(cl, idx, 14), up = e20[idx] > e50[idx], aligned = long ? up : !up, out = [], lines = [];
     if (long && avg >= hh * 0.998) { out.push("شکست سقف ۲۰ کندل قبل (" + price(hh) + ")"); lines.push({ price: hh, title: "سقف ۲۰ کندل", color: "#a855f7" }); }
     if (!long && avg <= ll * 1.002) { out.push("شکست کف ۲۰ کندل قبل (" + price(ll) + ")"); lines.push({ price: ll, title: "کف ۲۰ کندل", color: "#a855f7" }); }
@@ -783,45 +770,123 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     if (!out.length) out.push(aligned ? "ورود در جهت روند، بدون الگوی مشخص" : "ورود خلاف روند (احتمالاً معامله‌ی برگشتی)");
     return { list: out, e20: e20, e50: e50, lines: lines, trend: up ? "صعودی" : "نزولی", rsi: r };
   }
+  function levelsFor(g) {
+    var d = W[g.addr], side = sideOf(g.dir), open = isOpenDir(g.dir), avg = g.usd / g.size, L = [];
+    L.push({ price: avg, color: g.side === "BUY" ? "#16a34a" : "#dc2626", title: (open ? "ورود نهنگ" : "خروج نهنگ") + " (" + (side === "long" ? "لانگ" : "شورت") + ")", style: "solid" });
+    var closeSide = side === "long" ? "A" : "B", found = false;
+    if (open) (d.orders || []).forEach(function (o) {
+      if (o.coin !== g.coin || o.side !== closeSide) return;
+      var tp = /take/i.test(o.type) || (side === "long" ? o.px > avg : o.px < avg), pct = Math.abs(o.px - avg) / avg * 100;
+      L.push({ price: o.px, color: tp ? "#2563eb" : "#f59e0b", title: (tp ? "تارگت نهنگ" : "استاپ نهنگ") + " (" + pct.toFixed(1) + "٪)", style: "dash" }); found = true;
+    });
+    return { lines: L, found: found, open: open };
+  }
+  function fetchCandles(coin, tf, from) {
+    var body = JSON.stringify({ type: "candleSnapshot", req: { coin: coin, interval: tf, startTime: Math.floor(from), endTime: Date.now() } });
+    return tfetch(HL, { method: "POST", headers: { "Content-Type": "application/json" }, body: body }, 12000)
+      .then(function (r) { if (!r.ok) throw new Error("پاسخ سرور " + r.status); return r.json(); })
+      .then(function (a) {
+        if (!Array.isArray(a) || !a.length) throw new Error("Hyperliquid برای «" + coin + "» کندلی نداد");
+        return a.map(function (c) { return { t: +c.t, o: +c.o, h: +c.h, l: +c.l, c: +c.c }; }).filter(function (c) { return isFinite(c.c) && isFinite(c.o); });
+      });
+  }
+  var fmtT = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Tehran", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
+  function paint(S) {
+    var cv = S.cv, dpr = Math.min(window.devicePixelRatio || 1, 3), Wd = cv.clientWidth || 320, Ht = cv.clientHeight || 320;
+    cv.width = Math.round(Wd * dpr); cv.height = Math.round(Ht * dpr);
+    var x = cv.getContext("2d"); x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, Wd, Ht);
+    var fg = getComputedStyle(document.body).color, padL = 6, padR = 66, padT = 12, padB = 22, i;
+    var from = S.from, to = S.to, n = to - from + 1, step = (Wd - padL - padR) / n, bw = Math.max(1, Math.min(14, step * 0.68));
+    var lo = 1e18, hi = -1e18, vis = S.cs.slice(from, to + 1);
+    vis.forEach(function (c) { lo = Math.min(lo, c.l); hi = Math.max(hi, c.h); });
+    var mid = (lo + hi) / 2, lines = S.lines.filter(function (l) { return Math.abs(l.price - mid) / mid < 0.12; });
+    lines.forEach(function (l) { lo = Math.min(lo, l.price); hi = Math.max(hi, l.price); });
+    var pad = (hi - lo) * 0.06 || hi * 0.01; lo -= pad; hi += pad;
+    var yy = function (p) { return padT + (hi - p) / (hi - lo) * (Ht - padT - padB); }, xx = function (k) { return padL + (k - from + 0.5) * step; };
+    x.font = "11px system-ui, sans-serif"; x.direction = "ltr"; x.textBaseline = "middle";
+    x.strokeStyle = fg; x.fillStyle = fg;
+    for (i = 0; i <= 4; i++) { var p = lo + (hi - lo) * i / 4, y = yy(p); x.globalAlpha = 0.12; x.beginPath(); x.moveTo(padL, y); x.lineTo(Wd - padR, y); x.stroke(); x.globalAlpha = 0.65; x.textAlign = "left"; x.fillText(price(p), Wd - padR + 4, y); }
+    x.globalAlpha = 0.65; x.textAlign = "center"; x.textBaseline = "alphabetic";
+    for (i = 0; i < 4; i++) { var k = from + Math.round((n - 1) * (i + 0.5) / 4); if (S.cs[k]) x.fillText(fmtT.format(new Date(S.cs[k].t)).replace(",", ""), xx(k), Ht - 6); }
+    x.globalAlpha = 1; x.textBaseline = "middle";
+    for (i = from; i <= to; i++) {
+      var c = S.cs[i], up = c.c >= c.o, col = up ? "#16a34a" : "#dc2626"; x.strokeStyle = col; x.fillStyle = col; x.lineWidth = 1;
+      x.beginPath(); x.moveTo(xx(i), yy(c.h)); x.lineTo(xx(i), yy(c.l)); x.stroke();
+      var y1 = yy(c.o), y2 = yy(c.c); x.fillRect(xx(i) - bw / 2, Math.min(y1, y2), bw, Math.max(1, Math.abs(y2 - y1)));
+    }
+    [[S.e20, "#3b82f6"], [S.e50, "#f97316"]].forEach(function (e) {
+      if (!e[0]) return; x.strokeStyle = e[1]; x.lineWidth = 1.5; x.beginPath();
+      for (var k = from; k <= to; k++) { if (k === from) x.moveTo(xx(k), yy(e[0][k])); else x.lineTo(xx(k), yy(e[0][k])); } x.stroke();
+    });
+    x.lineWidth = 1.5;
+    lines.forEach(function (l) {
+      var y = yy(l.price); x.strokeStyle = l.color; x.setLineDash(l.style === "dash" ? [6, 4] : l.style === "dot" ? [2, 3] : []);
+      x.beginPath(); x.moveTo(padL, y); x.lineTo(Wd - padR, y); x.stroke(); x.setLineDash([]);
+      x.fillStyle = l.color; x.fillRect(Wd - padR, y - 8, padR - 2, 16); x.fillStyle = "#fff"; x.textAlign = "left"; x.fillText(price(l.price), Wd - padR + 3, y);
+      x.fillStyle = l.color; x.direction = "rtl"; x.textAlign = "left"; x.fillText(l.title, padL + 4, y - 9); x.direction = "ltr";
+    });
+    if (S.mark >= from && S.mark <= to) {
+      var mc = S.cs[S.mark], buy = S.g.side === "BUY", my = buy ? yy(mc.l) + 12 : yy(mc.h) - 12, mx = xx(S.mark);
+      x.fillStyle = buy ? "#16a34a" : "#dc2626"; x.beginPath();
+      if (buy) { x.moveTo(mx, my - 8); x.lineTo(mx - 6, my + 3); x.lineTo(mx + 6, my + 3); } else { x.moveTo(mx, my + 8); x.lineTo(mx - 6, my - 3); x.lineTo(mx + 6, my - 3); }
+      x.closePath(); x.fill(); x.textAlign = "center"; x.direction = "rtl"; x.fillText("نهنگ", mx, buy ? my + 14 : my - 14); x.direction = "ltr";
+    }
+    if (S.cross != null && S.cross >= from && S.cross <= to) { x.globalAlpha = 0.5; x.strokeStyle = fg; x.setLineDash([3, 3]); x.beginPath(); x.moveTo(xx(S.cross), padT); x.lineTo(xx(S.cross), Ht - padB); x.stroke(); x.setLineDash([]); x.globalAlpha = 1; }
+    S.geo = { padL: padL, step: step };
+  }
   function openChart(g) {
     var ov = $("chart-ov"); if (!ov) { ov = el("div", "ov"); ov.id = "chart-ov"; document.body.appendChild(ov); }
     ov.textContent = ""; ov.hidden = false;
-    var box = el("div", "ovbox"), top = el("div", "row"), tt = el("b", null, g.coin + " · " + g.tag), x = el("button", "btn", "بستن"); x.type = "button";
-    x.addEventListener("click", function () { ov.hidden = true; ov.textContent = ""; chartState = null; });
-    top.appendChild(tt); top.appendChild(x); box.appendChild(top);
-    var iv = el("div", "acts"), cont = el("div", "chartbox"), info = el("div", "sub"), lv = levelsFor(g);
-    var tfi = tfFor(W[g.addr]), cur = tfi.tf, pat = el("div", "ai");
-    ["5m", "15m", "1h", "4h"].forEach(function (k) { var b = el("button", "btn" + (k === cur ? " primary" : ""), k); b.type = "button"; b.addEventListener("click", function () { cur = k; [].forEach.call(iv.children, function (c) { c.className = "btn" + (c.textContent === k ? " primary" : ""); }); draw(); }); iv.appendChild(b); });
-    box.appendChild(iv); box.appendChild(cont); box.appendChild(info); ov.appendChild(box);
-    var lg = el("div", "chartlg"); lv.lines.forEach(function (l) { var s = el("span", "num"); s.style.color = l.color; s.textContent = "— " + l.title + ": " + price(l.price); lg.appendChild(s); }); box.appendChild(lg);
-    box.appendChild(el("p", "sub", lv.open ? (lv.found ? "استاپ و تارگت از سفارش‌های بازِ همین لحظه‌ی نهنگ روی صرافی خوانده شده؛ ممکنه بعداً عوض کنه." : "نهنگ الان روی این کوین استاپ یا تارگتی نگذاشته (احتمالاً دستی مدیریت می‌کنه). عددی از خودم نمی‌سازم.") : "این حرکت خروج بود، پس استاپ/تارگت نشان داده نمی‌شود."));
-    box.appendChild(pat); if (tfi.why) box.appendChild(el("p", "sub", tfi.why + " (این برداشت از میانگین سابقه‌ی نهنگ است؛ خود نهنگ تایم‌فریمش را اعلام نمی‌کند.)"));
-    var tvs = { "1h": "60", "4h": "240", "5m": "5", "15m": "15" };
+    var S = { g: g, cs: [], from: 0, to: 0, lines: [], cross: null, mark: -1 }, lv = levelsFor(g), tfi = tfFor(W[g.addr]), cur = tfi.tf, gone = false;
+    function close() { gone = true; ov.hidden = true; ov.textContent = ""; window.removeEventListener("resize", onResize); }
+    function onResize() { if (S.cs.length) paint(S); }
+    window.addEventListener("resize", onResize);
+    ov.onclick = function (e) { if (e.target === ov) close(); };
+    var box = el("div", "ovbox"), top = el("div", "row"), x = el("button", "btn", "بستن"); x.type = "button"; x.addEventListener("click", close);
+    top.appendChild(el("b", null, g.coin + " · " + g.tag + " · " + dirFa(g.dir))); top.appendChild(x); box.appendChild(top);
+    var bar = el("div", "acts"), cont = el("div", "chartbox"), cv = document.createElement("canvas"); cont.appendChild(cv); S.cv = cv;
+    var info = el("p", "sub", ""), pat = el("div", "ai"), lg = el("div", "chartlg");
+    function setTf(k) { cur = k; [].forEach.call(bar.children, function (c) { if (TFMS[c.textContent]) c.className = "btn" + (c.textContent === k ? " primary" : ""); }); load(); }
+    ["5m", "15m", "1h", "4h"].forEach(function (k) { var b = el("button", "btn" + (k === cur ? " primary" : ""), k); b.type = "button"; b.addEventListener("click", function () { setTf(k); }); bar.appendChild(b); });
+    function zoom(f) { if (!S.cs.length) return; var n = Math.max(20, Math.min(S.cs.length, Math.round((S.to - S.from + 1) * f))); S.from = Math.max(0, S.to - n + 1); paint(S); }
+    var zi = el("button", "btn", "+"), zo = el("button", "btn", "−"); zi.type = zo.type = "button"; zi.addEventListener("click", function () { zoom(0.7); }); zo.addEventListener("click", function () { zoom(1.4); }); bar.appendChild(zi); bar.appendChild(zo);
+    box.appendChild(bar); box.appendChild(cont); box.appendChild(info); box.appendChild(lg); box.appendChild(pat);
+    lv.lines.forEach(function (l) { var s = el("span", "num"); s.style.color = l.color; s.textContent = "— " + l.title + ": " + price(l.price); lg.appendChild(s); });
+    var ex = el("span", "num"); ex.style.color = "#3b82f6"; ex.textContent = "— EMA20 (آبی)  "; var ex2 = el("span", "num"); ex2.style.color = "#f97316"; ex2.textContent = "— EMA50 (نارنجی)"; lg.appendChild(ex); lg.appendChild(ex2);
+    box.appendChild(el("p", "sub", lv.open ? (lv.found ? "استاپ و تارگت از سفارش‌های بازِ همین لحظه‌ی نهنگ روی صرافی خوانده شده؛ ممکنه بعداً عوض کنه." : "نهنگ الان روی این کوین استاپ یا تارگتی نگذاشته (احتمالاً دستی مدیریت می‌کنه). عددی از خودم نمی‌سازم.") : "این حرکت خروج بود؛ فقط قیمت خروج نشان داده می‌شود."));
+    if (tfi.why) box.appendChild(el("p", "sub", tfi.why));
     var a = el("a", "btn", "باز کردن در TradingView"); a.target = "_blank"; a.rel = "noopener";
-    a.href = "https://www.tradingview.com/chart/?symbol=" + encodeURIComponent((/gold/i.test(g.coin) ? "OANDA:XAUUSD" : "BYBIT:" + g.coin.replace(/^[a-z]+:/i, "").replace(/^k/, "") + "USDT.P")); box.appendChild(a);
-    function draw() {
-      info.textContent = "در حال گرفتن کندل‌ها...";
-      var ms = { "5m": 300000, "15m": 900000, "1h": 3600000, "4h": 14400000 }[cur], end = Date.now(), start = Math.min(end - ms * 200, g.first - ms * 70);
-      Promise.all([loadLib(), tfetch("https://api.hyperliquid.xyz/info", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type: "candleSnapshot", req: { coin: g.coin, interval: cur, startTime: start, endTime: end } }) }, 10000).then(function (r) { return r.json(); })])
-        .then(function (rs) {
-          var cs = rs[1]; if (!cs || !cs.length) throw new Error("کندلی برای این کوین نیومد");
-          cont.textContent = ""; var dark = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches;
-          var ch = LightweightCharts.createChart(cont, { height: 320, layout: { background: { color: dark ? "#14161a" : "#ffffff" }, textColor: dark ? "#c8ccd2" : "#333" }, grid: { vertLines: { color: dark ? "#23262c" : "#eee" }, horzLines: { color: dark ? "#23262c" : "#eee" } }, timeScale: { timeVisible: true, secondsVisible: false }, rightPriceScale: { borderVisible: false } });
-          var sr = ch.addCandlestickSeries({ upColor: "#16a34a", downColor: "#dc2626", borderVisible: false, wickUpColor: "#16a34a", wickDownColor: "#dc2626" });
-          sr.setData(cs.map(function (c) { return { time: Math.floor(c.t / 1000), open: +c.o, high: +c.h, low: +c.l, close: +c.c }; }));
-          lv.lines.forEach(function (l) { sr.createPriceLine({ price: l.price, color: l.color, lineWidth: 2, lineStyle: l.style, axisLabelVisible: true, title: l.title }); });
-          var t0 = Math.floor(g.first / 1000), t1 = cs[0].t / 1000;
-          if (t0 >= t1) { var bt = cs.map(function (c) { return Math.floor(c.t / 1000); }).filter(function (t) { return t <= t0; }).pop(); if (bt) sr.setMarkers([{ time: bt, position: g.side === "BUY" ? "belowBar" : "aboveBar", color: g.side === "BUY" ? "#16a34a" : "#dc2626", shape: g.side === "BUY" ? "arrowUp" : "arrowDown", text: "نهنگ" }]); }
-          var P = isOpenDir(g.dir) ? entryPattern(cs, g) : null; pat.textContent = "";
-          if (P) {
-            [["#3b82f6", P.e20], ["#f97316", P.e50]].forEach(function (x) { var ls = ch.addLineSeries({ color: x[0], lineWidth: 1, priceLineVisible: false, lastValueVisible: false }); ls.setData(cs.map(function (c, k) { return { time: Math.floor(c.t / 1000), value: x[1][k] }; })); });
-            P.lines.forEach(function (l) { sr.createPriceLine({ price: l.price, color: l.color, lineWidth: 1, lineStyle: 1, axisLabelVisible: true, title: l.title }); });
-            pat.textContent = "وضع چارت لحظه‌ی ورود: " + P.list.join(" + ") + " · روند: " + P.trend + (P.rsi != null ? " · RSI " + P.rsi.toFixed(0) : "") + " (خط آبی EMA20، نارنجی EMA50)";
-          } else if (isOpenDir(g.dir)) pat.textContent = "برای تحلیل الگو کندل کافی قبل از ورود در این تایم‌فریم نبود؛ تایم‌فریم بزرگ‌تر را امتحان کن.";
-          ch.timeScale().fitContent(); chartState = ch; info.textContent = "کندل‌ها از Hyperliquid (" + cur + ") · الگو فقط توصیفِ وضع چارت است، نه دلیل واقعی نهنگ.";
-        }).catch(function (e) { info.textContent = "چارت نیومد: " + ((e && e.message) || e); });
+    a.href = "https://www.tradingview.com/chart/?symbol=" + encodeURIComponent(/gold/i.test(g.coin) ? "OANDA:XAUUSD" : "BYBIT:" + g.coin.replace(/^[a-z0-9]+:/i, "").replace(/^k/, "") + "USDT.P"); box.appendChild(a);
+    ov.appendChild(box);
+    // touch: tap / slide shows OHLC, horizontal drag pans
+    var drag = null;
+    cv.addEventListener("pointerdown", function (e) { drag = { x: e.clientX, from: S.from, to: S.to, moved: false }; try { cv.setPointerCapture(e.pointerId); } catch (er) {} });
+    cv.addEventListener("pointermove", function (e) {
+      if (!S.geo || !S.cs.length) return; var rect = cv.getBoundingClientRect();
+      if (drag && e.pointerType !== "mouse" && Math.abs(e.clientX - drag.x) > 8) drag.moved = true;
+      if (drag && drag.moved) { var sh = Math.round((e.clientX - drag.x) / S.geo.step), n = drag.to - drag.from; S.from = Math.max(0, Math.min(S.cs.length - 1 - n, drag.from - sh)); S.to = S.from + n; paint(S); return; }
+      var k = Math.round((e.clientX - rect.left - S.geo.padL) / S.geo.step - 0.5) + S.from; if (k < S.from || k > S.to) return;
+      S.cross = k; var c = S.cs[k]; info.textContent = fmtT.format(new Date(c.t)).replace(",", "") + "  O " + price(c.o) + "  H " + price(c.h) + "  L " + price(c.l) + "  C " + price(c.c); paint(S);
+    });
+    cv.addEventListener("pointerup", function () { drag = null; }); cv.addEventListener("pointercancel", function () { drag = null; });
+    function fail(msg) {
+      cont.style.display = "none"; info.textContent = ""; var rt = el("button", "btn primary", "دوباره امتحان کن"); rt.type = "button";
+      var m = el("p", "ai", "چارت نیومد: " + msg); m.appendChild(document.createElement("br")); m.appendChild(rt); info.parentNode.insertBefore(m, info);
+      rt.addEventListener("click", function () { m.remove(); cont.style.display = ""; load(); });
     }
-    draw();
+    function load() {
+      info.textContent = "در حال گرفتن کندل‌ها..."; pat.textContent = ""; var ms = TFMS[cur];
+      fetchCandles(g.coin, cur, Math.min(Date.now() - ms * 240, g.first - ms * 80)).then(function (cs) {
+        if (gone) return; if (cs.length < 5) throw new Error("کندل کافی نبود");
+        var P = entryPattern(cs, g), idx = entryIndex(cs, g);
+        S.cs = cs; S.e20 = P.e20; S.e50 = P.e50; S.mark = idx >= 0 && g.first - cs[idx].t < TFMS[cur] * 1.5 ? idx : -1; S.cross = null;
+        S.lines = lv.lines.concat(isOpenDir(g.dir) ? P.lines : []);
+        S.to = cs.length - 1; S.from = Math.max(0, Math.min(cs.length - 100, (idx >= 0 ? idx : cs.length) - 35)); if (S.to - S.from > 220) S.from = S.to - 220;
+        paint(S); info.textContent = "کندل‌ها از Hyperliquid (" + cur + ") · بکش تا جابه‌جا شود، بزن تا قیمت‌ها را ببینی.";
+        if (isOpenDir(g.dir)) pat.textContent = P.short ? "برای تحلیل الگو کندل کافی قبل از ورود در این تایم‌فریم نبود؛ تایم‌فریم بزرگ‌تر را امتحان کن." : "وضع چارت لحظه‌ی ورود: " + P.list.join(" + ") + " · روند: " + P.trend + (P.rsi != null ? " · RSI " + P.rsi.toFixed(0) : "") + " (توصیف چارت است، نه دلیل واقعی نهنگ)";
+      }).catch(function (e) { if (!gone) fail((e && e.message) || String(e)); });
+    }
+    load();
   }
   $("refresh").addEventListener("click", refreshNow);
   window.addEventListener("online", refreshNow); window.addEventListener("offline", function () { updateNet(); });
