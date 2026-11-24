@@ -391,7 +391,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
   function closeManual(p, px) {
     var n = p.margin * p.lev, d = p.side === "long" ? 1 : -1, SL = 0.0003, ex = p.side === "long" ? px * (1 - SL) : px * (1 + SL);
     var pnl = Math.max(-p.margin, n * d * (ex - p.entry) / p.entry - n * 0.00045 * 2);
-    M.open = M.open.filter(function (o) { return o.id !== p.id; }); M.closed.unshift({ id: p.id, srcId: p.srcId, kind: "manual", coin: p.coin, side: p.side, lev: p.lev, margin: p.margin, entry: p.entry, exit: ex, pnl: pnl, tag: p.tag, closedAt: Date.now() });
+    M.open = M.open.filter(function (o) { return o.id !== p.id; }); M.closed.unshift({ id: p.id, addr: p.addr, srcId: p.srcId, kind: "manual", coin: p.coin, side: p.side, lev: p.lev, margin: p.margin, entry: p.entry, exit: ex, pnl: pnl, tag: p.tag, closedAt: Date.now() });
     M.closed = M.closed.slice(0, 100); saveM(); renderAll();
   }
   function whaleClosedAfter(p) {
@@ -443,10 +443,10 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
   function renderLedger() {
     renderPaper();
     var rowsO = [], rowsC = [], manU = 0, manR = 0;
-    (DATA.open || []).forEach(function (p) { rowsO.push({ coin: p.coin, side: p.side, lev: p.lev, entry: p.entry, mark: p.mark, u: p.upnl, margin: p.margin, tag: p.tag, ts: p.opened_at, kind: "ربات" }); });
-    M.open.forEach(function (p) { var mk = marks[p.coin], u = mk ? calcU(p, mk.px) : null; if (u != null) manU += u; rowsO.push({ coin: p.coin, side: p.side, lev: p.lev, entry: p.entry, mark: mk ? mk.px : null, u: u, margin: p.margin, tag: p.tag, ts: p.openedAt, kind: "دستی", man: p }); });
-    (DATA.closed || []).forEach(function (t) { rowsC.push({ coin: t.coin, side: t.side, lev: t.lev, entry: t.entry, exit: t.exit, pnl: t.pnl, margin: t.margin, tag: t.tag, ts: t.closed_at, kind: "ربات", why: t.reason === "whale" ? "نهنگ بست" : t.reason === "liq" ? "تصفیه" : "دستی" }); });
-    M.closed.forEach(function (t) { manR += t.pnl; rowsC.push({ coin: t.coin, side: t.side, lev: t.lev, entry: t.entry, exit: t.exit, pnl: t.pnl, margin: t.margin, tag: t.tag, ts: t.closedAt, kind: "دستی", why: "بستی" }); });
+    (DATA.open || []).forEach(function (p) { rowsO.push({ coin: p.coin, side: p.side, lev: p.lev, entry: p.entry, mark: p.mark, u: p.upnl, margin: p.margin, tag: p.tag, addr: (p.key || "").split("|")[0], ts: p.opened_at, kind: "ربات" }); });
+    M.open.forEach(function (p) { var mk = marks[p.coin], u = mk ? calcU(p, mk.px) : null; if (u != null) manU += u; rowsO.push({ coin: p.coin, side: p.side, lev: p.lev, entry: p.entry, mark: mk ? mk.px : null, u: u, margin: p.margin, tag: p.tag, addr: p.addr, ts: p.openedAt, kind: "دستی", man: p }); });
+    (DATA.closed || []).forEach(function (t) { rowsC.push({ coin: t.coin, side: t.side, lev: t.lev, entry: t.entry, exit: t.exit, pnl: t.pnl, margin: t.margin, tag: t.tag, addr: (t.key || "").split("|")[0], ts: t.closed_at, kind: "ربات", why: t.reason === "whale" ? "نهنگ بست" : t.reason === "liq" ? "تصفیه" : "دستی" }); });
+    M.closed.forEach(function (t) { manR += t.pnl; rowsC.push({ coin: t.coin, side: t.side, lev: t.lev, entry: t.entry, exit: t.exit, pnl: t.pnl, margin: t.margin, tag: t.tag, addr: t.addr, ts: t.closedAt, kind: "دستی", why: "بستی" }); });
     rowsO.sort(function (a, b) { return b.ts - a.ts; }); rowsC.sort(function (a, b) { return b.ts - a.ts; });
     var eq = DATA.equity + manR + manU, pct = clamp((eq - START) / (GOAL - START)) * 100, tot = eq - START;
     $("p-eq").textContent = money(eq); $("p-bar").style.width = pct.toFixed(1) + "%"; $("p-pct").textContent = pct.toFixed(0) + "٪ از مسیر هدف";
@@ -454,38 +454,42 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     var wins = rowsC.filter(function (t) { return t.pnl > 0; }).length;
     stat(ps, "سود/زیان کل", (tot >= 0 ? "+" : "-") + money(Math.abs(tot)).replace("-", "")); stat(ps, "پوزیشن باز", String(rowsO.length));
     stat(ps, "بسته‌شده", String(rowsC.length)); stat(ps, "وین‌ریت", rowsC.length ? Math.round(100 * wins / rowsC.length) + "٪" : "—");
-    function sd(side) { return el("span", side === "long" ? "side-l" : "side-s", side === "long" ? "لانگ" : "شورت"); }
     function sgn(v) { return (v >= 0 ? "+" : "-") + money(Math.abs(v)).replace("-", ""); }
+    function link(tag, addr) { var a = el("a", "who", tag + "…"); a.href = "https://app.hyperliquid.xyz/explorer/" + addr; a.target = "_blank"; a.rel = "noopener"; return a; }
+    function head(r, extra) {
+      var h = el("div", "head"); h.appendChild(el("span", "side " + (r.side === "long" ? "buy" : "sell"), r.side === "long" ? "لانگ" : "شورت"));
+      h.appendChild(el("span", "coin", r.coin)); h.appendChild(el("span", "dir", r.lev + "x")); h.appendChild(el("span", "pill" + (r.kind === "دستی" ? " good" : ""), r.kind)); if (extra) h.appendChild(extra); return h;
+    }
+    function addrOf(r) { return r.addr || ""; }
     var ol = $("p-open"); ol.textContent = "";
     if (!rowsO.length) ol.appendChild(el("p", "empty", "هنوز پوزیشنی باز نیست."));
-    else {
-      var tb = el("div", "tbl"), th = el("div", "tr th"); ["کوین", "ورود ← الان", "سود/زیان"].forEach(function (x) { th.appendChild(el("div", null, x)); }); tb.appendChild(th);
-      rowsO.forEach(function (r) {
-        var tr = el("div", "tr"), c1 = el("div"), c2 = el("div", "num"), c3 = el("div", "pnl num " + (r.u == null ? "sub" : r.u >= 0 ? "up" : "down"));
-        var l1 = el("div"); l1.appendChild(el("strong", null, r.coin + " ")); l1.appendChild(sd(r.side)); l1.appendChild(el("span", "tag", r.kind)); c1.appendChild(l1);
-        c1.appendChild(el("p", "sub", r.lev + "x · " + r.tag + " · " + ago(r.ts)));
-        if (r.man) { var b1 = el("button", "btn primary", "بستن"); b1.type = "button"; b1.disabled = r.mark == null; b1.addEventListener("click", function () { closeManual(r.man, marks[r.man.coin].px); }); c1.appendChild(b1);
-          var wc = whaleClosedAfter(r.man); if (wc) { var b2 = el("button", "btn", "با قیمت نهنگ"); b2.type = "button"; b2.addEventListener("click", function () { closeManual(r.man, wc.px); }); c1.appendChild(b2); c1.appendChild(el("p", "sub", "نهنگ بست")); } }
-        c2.appendChild(el("div", null, price(r.entry))); c2.appendChild(el("p", "sub", r.mark ? "← " + price(r.mark) : "قیمت در راهه"));
-        c3.appendChild(document.createTextNode(r.u == null ? "—" : sgn(r.u))); if (r.u != null) c3.appendChild(el("small", null, (r.u >= 0 ? "+" : "") + (100 * r.u / r.margin).toFixed(1) + "٪"));
-        tr.appendChild(c1); tr.appendChild(c2); tr.appendChild(c3); tb.appendChild(tr);
-      });
-      var su = el("div", "tsum"); su.appendChild(el("span", null, "جمع باز")); var tu = rowsO.reduce(function (s, r) { return s + (r.u || 0); }, 0); su.appendChild(el("span", "num " + (tu >= 0 ? "up" : "down"), sgn(tu))); tb.appendChild(su); ol.appendChild(tb);
-    }
+    rowsO.forEach(function (r) {
+      var c = el("article", "card"), r1 = el("div", "row"); r1.appendChild(link(r.tag, addrOf(r)));
+      var wh = el("span", "when"); wh.appendChild(el("span", "num", clock(r.ts))); wh.appendChild(document.createTextNode(" · " + ago(r.ts))); r1.appendChild(wh); c.appendChild(r1);
+      c.appendChild(head(r));
+      var st = el("div", "stats"); stat(st, "ورود", price(r.entry)); stat(st, "الان", r.mark ? price(r.mark) : "در راهه"); stat(st, "مارجین", money(r.margin));
+      if (r.u != null) stat(st, "سود/زیان", sgn(r.u) + " (" + (r.u >= 0 ? "+" : "") + (100 * r.u / r.margin).toFixed(1) + "٪)", r.u >= 0 ? "up" : "down");
+      c.appendChild(st);
+      if (r.man) {
+        var acts = el("div", "acts"), b1 = el("button", "btn primary", "بستن با قیمت فعلی"); b1.type = "button"; b1.disabled = r.mark == null;
+        b1.addEventListener("click", function () { closeManual(r.man, marks[r.man.coin].px); }); acts.appendChild(b1);
+        var wc = whaleClosedAfter(r.man);
+        if (wc) { var b2 = el("button", "btn", "بستن با قیمت نهنگ"); b2.type = "button"; b2.addEventListener("click", function () { closeManual(r.man, wc.px); }); acts.appendChild(b2); c.appendChild(el("span", "pill bad", "نهنگ با قیمت " + price(wc.px) + " بست")); }
+        c.appendChild(acts);
+      }
+      ol.appendChild(c);
+    });
+    if (rowsO.length) { var tu = rowsO.reduce(function (s, r) { return s + (r.u || 0); }, 0); ol.appendChild(el("p", "sub", "جمع سود/زیان بازها: " + sgn(tu))); }
     var cl = $("p-closed"); cl.textContent = "";
     if (!rowsC.length) cl.appendChild(el("p", "empty", "هنوز چیزی بسته نشده."));
-    else {
-      var tc = el("div", "tbl"), hc = el("div", "tr th"); ["کوین", "ورود ← خروج", "سود/زیان"].forEach(function (x) { hc.appendChild(el("div", null, x)); }); tc.appendChild(hc);
-      rowsC.slice(0, 40).forEach(function (r) {
-        var tr = el("div", "tr"), c1 = el("div"), c2 = el("div", "num"), c3 = el("div", "pnl num " + (r.pnl >= 0 ? "up" : "down"));
-        var l1 = el("div"); l1.appendChild(el("strong", null, r.coin + " ")); l1.appendChild(sd(r.side)); l1.appendChild(el("span", "tag", r.kind)); c1.appendChild(l1);
-        c1.appendChild(el("p", "sub", r.lev + "x · " + r.tag + " · " + r.why));
-        c2.appendChild(el("div", null, price(r.entry))); c2.appendChild(el("p", "sub", "← " + price(r.exit)));
-        c3.appendChild(document.createTextNode(sgn(r.pnl))); c3.appendChild(el("small", null, (r.pnl >= 0 ? "+" : "") + (100 * r.pnl / r.margin).toFixed(1) + "٪"));
-        tr.appendChild(c1); tr.appendChild(c2); tr.appendChild(c3); tc.appendChild(tr);
-      });
-      var sc2 = el("div", "tsum"); sc2.appendChild(el("span", null, "جمع بسته‌شده‌ها")); var tcl = rowsC.reduce(function (s, r) { return s + r.pnl; }, 0); sc2.appendChild(el("span", "num " + (tcl >= 0 ? "up" : "down"), sgn(tcl))); tc.appendChild(sc2); cl.appendChild(tc);
-    }
+    rowsC.slice(0, 40).forEach(function (r) {
+      var c = el("article", "card"), r1 = el("div", "row"); r1.appendChild(link(r.tag, addrOf(r)));
+      var wh = el("span", "when"); wh.appendChild(el("span", "num", clock(r.ts))); wh.appendChild(document.createTextNode(" · " + ago(r.ts))); r1.appendChild(wh); c.appendChild(r1);
+      c.appendChild(head(r, el("span", "sub", r.why)));
+      var st = el("div", "stats"); stat(st, "ورود", price(r.entry)); stat(st, "خروج", price(r.exit)); stat(st, "مارجین", money(r.margin));
+      stat(st, "سود/زیان", sgn(r.pnl) + " (" + (r.pnl >= 0 ? "+" : "") + (100 * r.pnl / r.margin).toFixed(1) + "٪)", r.pnl >= 0 ? "up" : "down"); c.appendChild(st); cl.appendChild(c);
+    });
+    if (rowsC.length) { var tcl = rowsC.reduce(function (s, r) { return s + r.pnl; }, 0); cl.appendChild(el("p", "sub", "جمع سود/زیان بسته‌شده‌ها: " + sgn(tcl))); }
   }
   function autoText(g, d) {
     var side = sideOf(g.dir), v = verdict(d, g), rk = riskOf(d, g), sc = d.score, pro = [], con = [], cs = d.coins[g.coin + "|" + side], mk = marks[g.coin], avgPx = g.usd / g.size;
