@@ -20,6 +20,8 @@ HIST_MAX_PAGES = 6              # 2000 fills per page
 GAP = 5 * 60 * 1000             # same coin+direction fills closer than this = one move
 FEED_WINDOW = 72 * 3600 * 1000
 FEED_MAX = 60
+FULL_PER_RUN = 5              # heavy full refreshes per loop (weight ~140 each)
+FULL_EVERY = 270 * 1000        # full feed refresh per wallet at most this often (the cheap new-fills check runs every loop)
 
 
 def post(payload, tries=3):
@@ -369,7 +371,7 @@ def make_groups(tag, addr, fills, now):
     return groups[-FEED_MAX:]
 
 
-def build_data(st, cfg, marks, now, hist, feeds, prev, ords):
+def build_data(st, cfg, marks, now, hist, feeds, prev, ords, fat):
     opens, upl = [], 0.0
     for p in st["open"].values():
         m = marks.get(p["coin"])
@@ -384,7 +386,7 @@ def build_data(st, cfg, marks, now, hist, feeds, prev, ords):
         addr, h = w["addr"], hist.get("wallets", {}).get(w["addr"], {})
         feed = feeds.get(addr)
         entry = {"tag": w["tag"], "addr": addr, "group": w.get("group", ""), "status": "ok" if feed is not None else "error", "at": now,
-                 "orders": ords.get(addr) if ords.get(addr) is not None else old.get(addr, {}).get("orders", []),
+                 "feed_at": fat.get(addr), "orders": ords.get(addr) if ords.get(addr) is not None else old.get(addr, {}).get("orders", []),
                  "groups": feed if feed is not None else old.get(addr, {}).get("groups", []),
                  "hist_at": h.get("at"), "sum": h.get("sum"), "prof": h.get("prof"), "coins": h.get("coins", {})}
         if feed is None:
@@ -408,17 +410,35 @@ def main():
     hist = load(HIST_F, {"wallets": {}})
     prev = load(DATA_F, None)
     marks = marks_now()
-    feeds, ords = {}, {}
+    feeds, ords, fat, nfull = {}, {}, {}, 0
+    oldw = {w["addr"]: w for w in (prev or {}).get("wallets", [])}
     for w in cfg["wallets"]:
+        addr, ow = w["addr"], oldw.get(w["addr"], {})
         try:
-            fills = post({"type": "userFills", "user": w["addr"]})
-            if w.get("copy", True):  # scalpers hold 1-15 min: a 5-min poll can't copy them, so they are watch-only
-                process_wallet(st, cfg, w, fills, marks, now)
-            feeds[w["addr"]] = make_groups(w["tag"], w["addr"], fills, now)
-            try:
-                ords[w["addr"]] = fetch_orders(w["addr"])
-            except Exception as e:
-                print("orders failed", w["tag"], e, file=sys.stderr)
+            last = st["last_seen"].get(addr)
+            fresh = None
+            if w.get("copy", True) and last is not None:  # cheap check (weight ~20): only fills newer than the last one seen
+                fresh = post({"type": "userFillsByTime", "user": addr, "startTime": int(last) + 1})
+                if fresh:
+                    process_wallet(st, cfg, w, fresh, marks, now)
+            due = (last is None and w.get("copy", True)) or ow.get("feed_at") is None or now - ow.get("feed_at", 0) > FULL_EVERY
+            if due and not fresh and last is not None and nfull >= FULL_PER_RUN:
+                due = False  # spread the heavy requests over several loops to stay under the API weight limit
+            need_full = bool(fresh) or due
+            nfull += 1 if need_full else 0
+            if need_full:  # full fills + open orders: heavy, so only every few minutes or when something new happened
+                fills = post({"type": "userFills", "user": addr})
+                if w.get("copy", True) and last is None:
+                    process_wallet(st, cfg, w, fills, marks, now)  # first run: baseline only
+                feeds[addr] = make_groups(w["tag"], addr, fills, now)
+                fat[addr] = now
+                try:
+                    ords[addr] = fetch_orders(addr)
+                except Exception as e:
+                    print("orders failed", w["tag"], e, file=sys.stderr)
+            else:
+                feeds[addr] = ow.get("groups", [])
+                fat[addr] = ow.get("feed_at", now)
         except Exception as e:
             print("wallet failed", w["tag"], e, file=sys.stderr)
     for key, p in list(st["open"].items()):
@@ -428,10 +448,10 @@ def main():
     if refresh_history(hist, cfg, now):
         with open(HIST_F, "w", encoding="utf-8") as f:
             json.dump(hist, f, ensure_ascii=False)
-    data = build_data(st, cfg, marks, now, hist, feeds, prev, ords)
+    data = build_data(st, cfg, marks, now, hist, feeds, prev, ords, fat)
     def core(d):
         d = {k: v for k, v in (d or {}).items() if k not in ("updated", "marks")}
-        d["wallets"] = [{k: v for k, v in w.items() if k != "at"} for w in d.get("wallets", [])]
+        d["wallets"] = [{k: v for k, v in w.items() if k not in ("at", "feed_at")} for w in d.get("wallets", [])]
         return json.dumps(d, sort_keys=True, ensure_ascii=False)
     if core(data) != core(prev) or now - (prev or {}).get("updated", 0) > DATA_HEARTBEAT_S * 1000:
         os.makedirs(os.path.dirname(DATA_F), exist_ok=True)

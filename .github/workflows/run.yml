@@ -34,5 +34,5 @@ jobs:
               git pull --rebase -q || { git rebase --abort 2>/dev/null; git pull --rebase -X theirs -q || true; }
               git push -q || echo "push failed"
             fi
-            sleep 270
+            sleep 75
           done

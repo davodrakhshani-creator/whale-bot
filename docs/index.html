@@ -759,6 +759,27 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     });
     return { lines: L, found: found, open: open };
   }
+
+  function ema(a, n) { var k = 2 / (n + 1), o = [], p = 0; a.forEach(function (v, i) { p = i ? v * k + p * (1 - k) : v; o.push(p); }); return o; }
+  function rsiAt(c, i, n) { if (i < n) return null; var g = 0, l = 0, j; for (j = i - n + 1; j <= i; j++) { var d = c[j] - c[j - 1]; if (d > 0) g += d; else l -= d; } return l === 0 ? 100 : 100 - 100 / (1 + g / l); }
+  function durTxt(ms) { var h = ms / 3600000; return h < 1 ? Math.round(h * 60) + " دقیقه" : h < 48 ? h.toFixed(1) + " ساعت" : (h / 24).toFixed(1) + " روز"; }
+  function tfFor(d) { var ms = d && d.sum ? d.sum.avgDurationMs : 0; if (!ms) return { tf: "15m", why: "" }; var tf = ms < 2 * 3600000 ? "5m" : ms < 12 * 3600000 ? "15m" : ms < 72 * 3600000 ? "1h" : "4h"; return { tf: tf, why: "میانگین نگه‌داری پوزیشن این نهنگ " + durTxt(ms) + " است؛ پس تایم‌فریم " + tf + " به رفتارش نزدیک‌تر است." }; }
+  /* what the chart looked like at the whale's entry (objective context, not the whale's intent) */
+  function entryPattern(cs, g) {
+    var side = sideOf(g.dir), avg = g.usd / g.size, idx = -1, i;
+    for (i = 0; i < cs.length; i++) if (cs[i].t <= g.first) idx = i;
+    if (idx < 30) return null;
+    var cl = cs.map(function (c) { return +c.c; }), e20 = ema(cl, 20), e50 = ema(cl, 50), hh = -1e18, ll = 1e18;
+    for (i = idx - 20; i < idx; i++) { hh = Math.max(hh, +cs[i].h); ll = Math.min(ll, +cs[i].l); }
+    var long = side === "long", r = rsiAt(cl, idx, 14), up = e20[idx] > e50[idx], aligned = long ? up : !up, out = [], lines = [];
+    if (long && avg >= hh * 0.998) { out.push("شکست سقف ۲۰ کندل قبل (" + price(hh) + ")"); lines.push({ price: hh, title: "سقف ۲۰ کندل", color: "#a855f7" }); }
+    if (!long && avg <= ll * 1.002) { out.push("شکست کف ۲۰ کندل قبل (" + price(ll) + ")"); lines.push({ price: ll, title: "کف ۲۰ کندل", color: "#a855f7" }); }
+    if (aligned && (Math.abs(avg - e20[idx]) / avg < 0.004 || Math.abs(avg - e50[idx]) / avg < 0.006)) out.push("پولبک به میانگین متحرک در جهت روند");
+    if (r != null && long && r < 32) out.push("خرید در اشباع فروش (RSI " + r.toFixed(0) + ")");
+    if (r != null && !long && r > 68) out.push("فروش در اشباع خرید (RSI " + r.toFixed(0) + ")");
+    if (!out.length) out.push(aligned ? "ورود در جهت روند، بدون الگوی مشخص" : "ورود خلاف روند (احتمالاً معامله‌ی برگشتی)");
+    return { list: out, e20: e20, e50: e50, lines: lines, trend: up ? "صعودی" : "نزولی", rsi: r };
+  }
   function openChart(g) {
     var ov = $("chart-ov"); if (!ov) { ov = el("div", "ov"); ov.id = "chart-ov"; document.body.appendChild(ov); }
     ov.textContent = ""; ov.hidden = false;
@@ -766,17 +787,18 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     x.addEventListener("click", function () { ov.hidden = true; ov.textContent = ""; chartState = null; });
     top.appendChild(tt); top.appendChild(x); box.appendChild(top);
     var iv = el("div", "acts"), cont = el("div", "chartbox"), info = el("div", "sub"), lv = levelsFor(g);
-    var cur = "15m";
+    var tfi = tfFor(W[g.addr]), cur = tfi.tf, pat = el("div", "ai");
     ["5m", "15m", "1h", "4h"].forEach(function (k) { var b = el("button", "btn" + (k === cur ? " primary" : ""), k); b.type = "button"; b.addEventListener("click", function () { cur = k; [].forEach.call(iv.children, function (c) { c.className = "btn" + (c.textContent === k ? " primary" : ""); }); draw(); }); iv.appendChild(b); });
     box.appendChild(iv); box.appendChild(cont); box.appendChild(info); ov.appendChild(box);
     var lg = el("div", "chartlg"); lv.lines.forEach(function (l) { var s = el("span", "num"); s.style.color = l.color; s.textContent = "— " + l.title + ": " + price(l.price); lg.appendChild(s); }); box.appendChild(lg);
     box.appendChild(el("p", "sub", lv.open ? (lv.found ? "استاپ و تارگت از سفارش‌های بازِ همین لحظه‌ی نهنگ روی صرافی خوانده شده؛ ممکنه بعداً عوض کنه." : "نهنگ الان روی این کوین استاپ یا تارگتی نگذاشته (احتمالاً دستی مدیریت می‌کنه). عددی از خودم نمی‌سازم.") : "این حرکت خروج بود، پس استاپ/تارگت نشان داده نمی‌شود."));
+    box.appendChild(pat); if (tfi.why) box.appendChild(el("p", "sub", tfi.why + " (این برداشت از میانگین سابقه‌ی نهنگ است؛ خود نهنگ تایم‌فریمش را اعلام نمی‌کند.)"));
     var tvs = { "1h": "60", "4h": "240", "5m": "5", "15m": "15" };
     var a = el("a", "btn", "باز کردن در TradingView"); a.target = "_blank"; a.rel = "noopener";
     a.href = "https://www.tradingview.com/chart/?symbol=" + encodeURIComponent((/gold/i.test(g.coin) ? "OANDA:XAUUSD" : "BYBIT:" + g.coin.replace(/^[a-z]+:/i, "").replace(/^k/, "") + "USDT.P")); box.appendChild(a);
     function draw() {
       info.textContent = "در حال گرفتن کندل‌ها...";
-      var ms = { "5m": 300000, "15m": 900000, "1h": 3600000, "4h": 14400000 }[cur], end = Date.now(), start = end - ms * 200;
+      var ms = { "5m": 300000, "15m": 900000, "1h": 3600000, "4h": 14400000 }[cur], end = Date.now(), start = Math.min(end - ms * 200, g.first - ms * 70);
       Promise.all([loadLib(), tfetch("https://api.hyperliquid.xyz/info", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type: "candleSnapshot", req: { coin: g.coin, interval: cur, startTime: start, endTime: end } }) }, 10000).then(function (r) { return r.json(); })])
         .then(function (rs) {
           var cs = rs[1]; if (!cs || !cs.length) throw new Error("کندلی برای این کوین نیومد");
@@ -787,7 +809,13 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
           lv.lines.forEach(function (l) { sr.createPriceLine({ price: l.price, color: l.color, lineWidth: 2, lineStyle: l.style, axisLabelVisible: true, title: l.title }); });
           var t0 = Math.floor(g.first / 1000), t1 = cs[0].t / 1000;
           if (t0 >= t1) { var bt = cs.map(function (c) { return Math.floor(c.t / 1000); }).filter(function (t) { return t <= t0; }).pop(); if (bt) sr.setMarkers([{ time: bt, position: g.side === "BUY" ? "belowBar" : "aboveBar", color: g.side === "BUY" ? "#16a34a" : "#dc2626", shape: g.side === "BUY" ? "arrowUp" : "arrowDown", text: "نهنگ" }]); }
-          ch.timeScale().fitContent(); chartState = ch; info.textContent = "کندل‌ها از Hyperliquid (" + cur + ")";
+          var P = isOpenDir(g.dir) ? entryPattern(cs, g) : null; pat.textContent = "";
+          if (P) {
+            [["#3b82f6", P.e20], ["#f97316", P.e50]].forEach(function (x) { var ls = ch.addLineSeries({ color: x[0], lineWidth: 1, priceLineVisible: false, lastValueVisible: false }); ls.setData(cs.map(function (c, k) { return { time: Math.floor(c.t / 1000), value: x[1][k] }; })); });
+            P.lines.forEach(function (l) { sr.createPriceLine({ price: l.price, color: l.color, lineWidth: 1, lineStyle: 1, axisLabelVisible: true, title: l.title }); });
+            pat.textContent = "وضع چارت لحظه‌ی ورود: " + P.list.join(" + ") + " · روند: " + P.trend + (P.rsi != null ? " · RSI " + P.rsi.toFixed(0) : "") + " (خط آبی EMA20، نارنجی EMA50)";
+          } else if (isOpenDir(g.dir)) pat.textContent = "برای تحلیل الگو کندل کافی قبل از ورود در این تایم‌فریم نبود؛ تایم‌فریم بزرگ‌تر را امتحان کن.";
+          ch.timeScale().fitContent(); chartState = ch; info.textContent = "کندل‌ها از Hyperliquid (" + cur + ") · الگو فقط توصیفِ وضع چارت است، نه دلیل واقعی نهنگ.";
         }).catch(function (e) { info.textContent = "چارت نیومد: " + ((e && e.message) || e); });
     }
     draw();
