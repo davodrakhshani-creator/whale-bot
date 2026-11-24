@@ -1,5 +1,5 @@
 {
- "balance": 1045.9154271217167,
+ "balance": 1068.1020240248397,
  "open": {
   "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|PUMP|short": {
    "key": "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|PUMP|short",
@@ -121,34 +121,6 @@
    "opened_at": 1795443423697,
    "whale_usd": 90167.64768000001
   },
-  "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|AERO|short": {
-   "key": "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|AERO|short",
-   "tag": "c6aa",
-   "group": "نهنگ",
-   "coin": "AERO",
-   "src": "AERO",
-   "side": "short",
-   "entry": 0.42047382,
-   "whale_px": 0.45230082747431044,
-   "margin": 50,
-   "lev": 5,
-   "opened_at": 1795444223729,
-   "whale_usd": 2508.91269
-  },
-  "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|AAVE|short": {
-   "key": "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|AAVE|short",
-   "tag": "c6aa",
-   "group": "نهنگ",
-   "coin": "AAVE",
-   "src": "AAVE",
-   "side": "short",
-   "entry": 98.38397595,
-   "whale_px": 103.65686081805349,
-   "margin": 50,
-   "lev": 5,
-   "opened_at": 1795447267886,
-   "whale_usd": 91865.8929
-  },
   "0x9aa589355bf745db9784c8ef3c646360f11b58af|xyz:SPCX|short": {
    "key": "0x9aa589355bf745db9784c8ef3c646360f11b58af|xyz:SPCX|short",
    "tag": "9aa5",
@@ -190,6 +162,20 @@
    "lev": 5,
    "opened_at": 1795553519605,
    "whale_usd": 2235.585510000001
+  },
+  "0x9aa589355bf745db9784c8ef3c646360f11b58af|xyz:MU|short": {
+   "key": "0x9aa589355bf745db9784c8ef3c646360f11b58af|xyz:MU|short",
+   "tag": "9aa5",
+   "group": "نهنگ",
+   "coin": "xyz:MU",
+   "src": "xyz:MU",
+   "side": "short",
+   "entry": 631.2055815,
+   "whale_px": 631.52,
+   "margin": 50,
+   "lev": 5,
+   "opened_at": 1795558192104,
+   "whale_usd": 2412.4064
   }
  },
  "closed": [
@@ -368,14 +354,45 @@
    "pnl": -23.30594781372794,
    "closed_at": 1795556937436,
    "reason": "whale"
+  },
+  {
+   "key": "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|AERO|short",
+   "tag": "c6aa",
+   "group": "نهنگ",
+   "coin": "AERO",
+   "src": "AERO",
+   "side": "short",
+   "entry": 0.42047382,
+   "whale_px": 0.45230082747431044,
+   "margin": 50,
+   "lev": 5,
+   "opened_at": 1795444223729,
+   "whale_usd": 2508.91269,
+   "exit": 0.400160012,
+   "pnl": 11.852926754155579,
+   "closed_at": 1795558195310,
+   "reason": "whale"
+  },
+  {
+   "key": "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|AAVE|short",
+   "tag": "c6aa",
+   "group": "نهنگ",
+   "coin": "AAVE",
+   "src": "AAVE",
+   "side": "short",
+   "entry": 98.38397595,
+   "whale_px": 103.65686081805349,
+   "margin": 50,
+   "lev": 5,
+   "opened_at": 1795447267886,
+   "whale_usd": 91865.8929,
+   "exit": 94.22876015,
+   "pnl": 10.333670148967503,
+   "closed_at": 1795558195310,
+   "reason": "whale"
   }
  ],
  "pending": {
-  "0x9aa589355bf745db9784c8ef3c646360f11b58af|ZEC|long": {
-   "usd": 1198.5624,
-   "size": 1.6800000000000002,
-   "last": 1795533985305
-  },
   "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|RUNE|short": {
    "usd": 514.686096,
    "size": 1015.2,
@@ -385,7 +402,7 @@
  "last_seen": {
   "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75": 1795557850685,
   "0xf382f419448b471da26225c4f849bb240be5578c": 1795550461778,
-  "0x9aa589355bf745db9784c8ef3c646360f11b58af": 1795535514765,
+  "0x9aa589355bf745db9784c8ef3c646360f11b58af": 1795558192104,
   "0x9946e6adf95809a5fc9b7f6f9f887c98e0000852": 1795371179100,
   "0x541e077ac38c56d7bf590924d249c60b0c80071d": 1795558019001,
   "0x850ff4a5ea18d06b431ac984173395b6d00a435c": 1795371179100,
@@ -396,26 +413,6 @@
   "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37": 1795557407988
  },
  "events": [
-  {
-   "t": 1795442767609,
-   "text": "c191 باز کرد xyz:BABA short (~$12,101) ولی سقف 15 پوزیشن باز پر بود"
-  },
-  {
-   "t": 1795442873897,
-   "text": "c191 باز کرد xyz:ARM short (~$23,866) ولی سقف 15 پوزیشن باز پر بود"
-  },
-  {
-   "t": 1795443657125,
-   "text": "c191 باز کرد ETH short (~$30,737) ولی سقف 15 پوزیشن باز پر بود"
-  },
-  {
-   "t": 1795442892903,
-   "text": "c191 باز کرد xyz:SOXL short (~$12,701) ولی سقف 15 پوزیشن باز پر بود"
-  },
-  {
-   "t": 1795443902916,
-   "text": "c191 باز کرد xyz:MU short (~$84,055) ولی سقف 15 پوزیشن باز پر بود"
-  },
   {
    "t": 1795442831344,
    "text": "c191 باز کرد LINK long (~$3,872) ولی سقف 15 پوزیشن باز پر بود"
@@ -1195,8 +1192,28 @@
   {
    "t": 1795556937436,
    "text": "همگام‌سازی: a70a دیگر xyz:SKHX long ندارد؛ کپی مجازی بسته شد"
+  },
+  {
+   "t": 1795558195310,
+   "text": "کپی مجازی بسته شد (نهنگ بست): c6aa AERO شورت سود/زیان +11.85$"
+  },
+  {
+   "t": 1795558195310,
+   "text": "همگام‌سازی: c6aa دیگر AERO short ندارد؛ کپی مجازی بسته شد"
+  },
+  {
+   "t": 1795558195310,
+   "text": "کپی مجازی بسته شد (نهنگ بست): c6aa AAVE شورت سود/زیان +10.33$"
+  },
+  {
+   "t": 1795558195310,
+   "text": "همگام‌سازی: c6aa دیگر AAVE short ندارد؛ کپی مجازی بسته شد"
+  },
+  {
+   "t": 1795558192104,
+   "text": "کپی مجازی باز شد: 9aa5 xyz:MU شورت ورود 631.206 (حجم نهنگ ~$2,412)"
   }
  ],
- "data_ts": 1795558149428,
+ "data_ts": 1795558195310,
  "started": 1795416439329
 }
