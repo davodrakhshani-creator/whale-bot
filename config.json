@@ -70,8 +70,29 @@
    "hist": false
   },
   {
-   "addr": "0xb040d8d9b0c9b1e4f3d51a010e8c1caf36dadda7",
-   "tag": "b040",
+   "addr": "0x9e5d8291fd4b9f9de1d36c76f25d2a6f7beb4582",
+   "tag": "9e5d",
+   "group": "اسکلپ",
+   "copy": false,
+   "hist": false
+  },
+  {
+   "addr": "0x2640f92e1ed22558f3cd1fdf85c78b2a04373675",
+   "tag": "2640",
+   "group": "اسکلپ",
+   "copy": false,
+   "hist": false
+  },
+  {
+   "addr": "0x693e2432a7522b6a48d9de32489ac4af10a1beb3",
+   "tag": "693e",
+   "group": "اسکلپ",
+   "copy": false,
+   "hist": false
+  },
+  {
+   "addr": "0x8516de2c6c227613787655aba30cb3ffdb7b7dfd",
+   "tag": "8516",
    "group": "اسکلپ",
    "copy": false,
    "hist": false
