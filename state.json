@@ -1,5 +1,5 @@
 {
- "balance": 1055.2526694369558,
+ "balance": 1060.4936486408697,
  "open": {
   "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|PUMP|short": {
    "key": "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|PUMP|short",
@@ -91,19 +91,6 @@
    "lev": 5,
    "opened_at": 1795418249570,
    "whale_usd": 15361.610560000005
-  },
-  "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9|BTC|short": {
-   "key": "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9|BTC|short",
-   "tag": "a70a",
-   "group": "طلا",
-   "coin": "BTC",
-   "side": "short",
-   "entry": 61472.05285,
-   "whale_px": 61544.392251569945,
-   "margin": 50,
-   "lev": 5,
-   "opened_at": 1795418184294,
-   "whale_usd": 90849.98551000001
   },
   "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|TRX|short": {
    "key": "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|TRX|short",
@@ -202,6 +189,20 @@
    "lev": 5,
    "opened_at": 1795534013999,
    "whale_usd": 32364.7495
+  },
+  "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9|BTC|long": {
+   "key": "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9|BTC|long",
+   "tag": "a70a",
+   "group": "طلا",
+   "coin": "BTC",
+   "src": "BTC",
+   "side": "long",
+   "entry": 59998.49415,
+   "whale_px": 60110.0,
+   "margin": 50,
+   "lev": 5,
+   "opened_at": 1795534520252,
+   "whale_usd": 24934.2291
   }
  },
  "closed": [
@@ -274,18 +275,30 @@
    "pnl": 25.343519760830265,
    "closed_at": 1795533985305,
    "reason": "whale"
+  },
+  {
+   "key": "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9|BTC|short",
+   "tag": "a70a",
+   "group": "طلا",
+   "coin": "BTC",
+   "side": "short",
+   "entry": 61472.05285,
+   "whale_px": 61544.392251569945,
+   "margin": 50,
+   "lev": 5,
+   "opened_at": 1795418184294,
+   "whale_usd": 90849.98551000001,
+   "exit": 60128.032999999996,
+   "pnl": 5.24097920391398,
+   "closed_at": 1795534520252,
+   "reason": "whale"
   }
  ],
  "pending": {
-  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|xyz:STRC|long": {
-   "usd": 1836.7834,
-   "size": 18.9,
-   "last": 1795532778005
-  },
   "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|HYPE|short": {
-   "usd": 1252.40175,
-   "size": 20.25,
-   "last": 1795532948618
+   "usd": 894.3455,
+   "size": 14.5,
+   "last": 1795534402671
   },
   "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|xyz:TSM|long": {
    "usd": 363.49755999999996,
@@ -296,11 +309,6 @@
    "usd": 1198.5624,
    "size": 1.6800000000000002,
    "last": 1795533985305
-  },
-  "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9|ETH|long": {
-   "usd": 12.41646,
-   "size": 0.0074,
-   "last": 1795533981047
   },
   "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|xyz:HYUNDAI|short": {
    "usd": 363.20155,
@@ -316,25 +324,17 @@
  "last_seen": {
   "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75": 1795533731607,
   "0xf382f419448b471da26225c4f849bb240be5578c": 1795525778547,
-  "0x9aa589355bf745db9784c8ef3c646360f11b58af": 1795534335926,
+  "0x9aa589355bf745db9784c8ef3c646360f11b58af": 1795534602997,
   "0x9946e6adf95809a5fc9b7f6f9f887c98e0000852": 1795371179100,
   "0x541e077ac38c56d7bf590924d249c60b0c80071d": 1795478400111,
   "0x850ff4a5ea18d06b431ac984173395b6d00a435c": 1795371179100,
   "0x34f09a89bdfbefb509b3e1c80891a750a22a1119": 1795371179100,
   "0x7256bdc5b2dce2600f79b1fd1469e80357936e98": 1795413632500,
   "0xbd8a4f1170abd4fcb3422d60ea1d005eb2bddcf1": 1795514744136,
-  "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9": 1795534105885,
-  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37": 1795534312683
+  "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9": 1795534624212,
+  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37": 1795534405755
  },
  "events": [
-  {
-   "t": 1795416442202,
-   "text": "a70a باز کرد BTC short (~$104,731) ولی جا یا موجودی نبود"
-  },
-  {
-   "t": 1795414076381,
-   "text": "a70a باز کرد xyz:SKHY short (~$64,518) ولی جا یا موجودی نبود"
-  },
   {
    "t": 1795414126018,
    "text": "a70a باز کرد xyz:SKHX long (~$123,780) ولی جا یا موجودی نبود"
@@ -1126,8 +1126,16 @@
   {
    "t": 1795534095842,
    "text": "a70a باز کرد xyz:SKHY long (~$2,844) ولی سقف 15 پوزیشن باز پر بود"
+  },
+  {
+   "t": 1795534520252,
+   "text": "کپی مجازی بسته شد (نهنگ بست): a70a BTC شورت سود/زیان +5.24$"
+  },
+  {
+   "t": 1795534520252,
+   "text": "کپی مجازی باز شد: a70a BTC لانگ ورود 59998.5 (حجم نهنگ ~$24,934)"
   }
  ],
- "data_ts": 1795534350931,
+ "data_ts": 1795534629851,
  "started": 1795416439329
 }
