@@ -1,0 +1,13 @@
+name: probe
+on: workflow_dispatch
+jobs:
+  p:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          now=$(( $(date +%s) * 1000 )); st=$(( now - 200*900000 ))
+          for c in BTC xyz:GOLD GOLD xyz:SPCX ZEC; do
+            echo "== $c"; /usr/bin/time -f "%es" curl -s -m 25 -X POST https://api.hyperliquid.xyz/info -H 'Content-Type: application/json' -d "{\"type\":\"candleSnapshot\",\"req\":{\"coin\":\"$c\",\"interval\":\"15m\",\"startTime\":$st,\"endTime\":$now}}" | head -c 300; echo
+          done
+          echo "== CORS"; curl -s -D - -o /dev/null -X POST https://api.hyperliquid.xyz/info -H 'Origin: https://davodrakhshani-creator.github.io' -H 'Content-Type: application/json' -d '{"type":"allMids"}' | grep -i "access-control\|HTTP"
+          curl -s -D - -o /dev/null -X OPTIONS https://api.hyperliquid.xyz/info -H 'Origin: https://davodrakhshani-creator.github.io' -H 'Access-Control-Request-Method: POST' -H 'Access-Control-Request-Headers: content-type' | grep -i "access-control\|HTTP"
