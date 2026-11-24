@@ -1,16 +1,89 @@
 {
-  "wallets": [
-    {"addr": "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75", "tag": "c6aa", "group": "نهنگ"},
-    {"addr": "0xf382f419448b471da26225c4f849bb240be5578c", "tag": "f382", "group": "نهنگ"},
-    {"addr": "0x9aa589355bf745db9784c8ef3c646360f11b58af", "tag": "9aa5", "group": "نهنگ"},
-    {"addr": "0x9946e6adf95809a5fc9b7f6f9f887c98e0000852", "tag": "9946", "group": "نهنگ"},
-    {"addr": "0x541e077ac38c56d7bf590924d249c60b0c80071d", "tag": "541e", "group": "نهنگ"},
-    {"addr": "0x850ff4a5ea18d06b431ac984173395b6d00a435c", "tag": "850f", "group": "وین‌ریت"},
-    {"addr": "0x34f09a89bdfbefb509b3e1c80891a750a22a1119", "tag": "34f0", "group": "وین‌ریت"},
-    {"addr": "0x7256bdc5b2dce2600f79b1fd1469e80357936e98", "tag": "7256", "group": "وین‌ریت"},
-    {"addr": "0xbd8a4f1170abd4fcb3422d60ea1d005eb2bddcf1", "tag": "bd8a", "group": "وین‌ریت"},
-    {"addr": "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9", "tag": "a70a", "group": "طلا"},
-    {"addr": "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37", "tag": "c191", "group": "طلا"}
-  ],
-  "settings": {"start_balance": 1000, "margin": 50, "leverage": 5, "max_open": 15, "gold_margin": 100, "gold_max": 3, "min_usd": 2000}
+ "wallets": [
+  {
+   "addr": "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75",
+   "tag": "c6aa",
+   "group": "نهنگ"
+  },
+  {
+   "addr": "0xf382f419448b471da26225c4f849bb240be5578c",
+   "tag": "f382",
+   "group": "نهنگ"
+  },
+  {
+   "addr": "0x9aa589355bf745db9784c8ef3c646360f11b58af",
+   "tag": "9aa5",
+   "group": "نهنگ"
+  },
+  {
+   "addr": "0x9946e6adf95809a5fc9b7f6f9f887c98e0000852",
+   "tag": "9946",
+   "group": "نهنگ"
+  },
+  {
+   "addr": "0x541e077ac38c56d7bf590924d249c60b0c80071d",
+   "tag": "541e",
+   "group": "نهنگ"
+  },
+  {
+   "addr": "0x850ff4a5ea18d06b431ac984173395b6d00a435c",
+   "tag": "850f",
+   "group": "وین‌ریت"
+  },
+  {
+   "addr": "0x34f09a89bdfbefb509b3e1c80891a750a22a1119",
+   "tag": "34f0",
+   "group": "وین‌ریت"
+  },
+  {
+   "addr": "0x7256bdc5b2dce2600f79b1fd1469e80357936e98",
+   "tag": "7256",
+   "group": "وین‌ریت"
+  },
+  {
+   "addr": "0xbd8a4f1170abd4fcb3422d60ea1d005eb2bddcf1",
+   "tag": "bd8a",
+   "group": "وین‌ریت"
+  },
+  {
+   "addr": "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9",
+   "tag": "a70a",
+   "group": "طلا"
+  },
+  {
+   "addr": "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37",
+   "tag": "c191",
+   "group": "طلا"
+  },
+  {
+   "addr": "0xbb160cb61e694570f9d570f9fcde7c61dd2143ad",
+   "tag": "bb16",
+   "group": "اسکلپ",
+   "copy": false,
+   "hist": false
+  },
+  {
+   "addr": "0x2688d3ab9d031e11a0bd4c0fc31e35b4274a23f2",
+   "tag": "2688",
+   "group": "اسکلپ",
+   "copy": false,
+   "hist": false
+  },
+  {
+   "addr": "0xb040d8d9b0c9b1e4f3d51a010e8c1caf36dadda7",
+   "tag": "b040",
+   "group": "اسکلپ",
+   "copy": false,
+   "hist": false
+  }
+ ],
+ "settings": {
+  "start_balance": 1000,
+  "margin": 50,
+  "leverage": 5,
+  "max_open": 15,
+  "gold_margin": 100,
+  "gold_max": 3,
+  "min_usd": 2000
+ }
 }

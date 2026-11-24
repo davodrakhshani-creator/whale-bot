@@ -49,8 +49,8 @@ button, select, input { font: inherit; }
 button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .up { color: var(--buy) !important; } .down { color: var(--sell) !important; }
 
-.tabs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
-.tabs button { border: 0; background: transparent; color: var(--muted); padding: 8px 1px; border-radius: 9px; cursor: pointer; font-weight: 500; font-size: .72rem; line-height: 1.4; }
+.tabs { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.tabs button { border: 0; background: transparent; color: var(--muted); padding: 8px 1px; border-radius: 9px; cursor: pointer; font-weight: 500; font-size: .64rem; line-height: 1.4; }
 .tabs button[aria-selected="true"] { background: var(--accent-soft); color: var(--accent); }
 .view { display: flex; flex-direction: column; gap: 12px; }
 
@@ -126,6 +126,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     <button role="tab" id="t-paper" aria-selected="false">کپی مجازی</button>
     <button role="tab" id="t-hw" aria-selected="false">وین‌ریت بالا</button>
     <button role="tab" id="t-gold" aria-selected="false">طلا</button>
+    <button role="tab" id="t-scalp" aria-selected="false">اسکلپ</button>
   </div>
 
   <div class="banner" id="banner" hidden><span id="banner-text"></span></div>
@@ -175,6 +176,16 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     <div class="list" id="gold-wallets"></div>
   </section>
 
+  <section class="view" id="v-scalp" hidden>
+    <div class="banner"><span>اسکلپرهای وین‌ریت بالای ۶۰٪ (وین‌ریتِ پوزیشن، نه فیل). از ۹۵ کیف‌پولی که امروز اسکلپ کرده بودند، آمار ۹۰ روزِ ۲۴ تا را چک کردم. فقط سه تا هم وین‌ریت بالای ۶۰٪ دارن، هم سودده‌اند و هم واقعاً اسکلپ‌اند. چهار تا وین‌ریت ۶۰٪+ داشتن ولی سود کل منفی بود، و یکی هم سوئینگِ ۲٫۵ ساعته بود، پس رد شدن. فقط همان ۲۴ تا را دیدم، نه همه‌ی بازار.</span></div>
+    <div class="banner"><span>هشدار مهم: این‌ها هر پوزیشن را ۱ تا ۱۵ دقیقه نگه می‌دارند و ربات ما هر ۵ تا ۱۵ دقیقه یک‌بار می‌خونه. وقتی ما ورودشان را ببینیم معمولاً پوزیشن بسته شده. پس اینجا فقط تماشا و آمار است و ربات خودکار کپی نمی‌کنه. دکمه‌ی دستی هم عمداً نیست.</span></div>
+    <h2>اسکلپ‌های بازِ ۳۰ دقیقه‌ی اخیر</h2>
+    <div class="feed" id="scalp-feed" aria-live="polite"></div>
+    <h2>سه اسکلپر وین‌ریت بالا</h2>
+    <div class="list" id="sc-list"></div>
+    <p class="sub">آمار از Coinversa (پوزیشن‌های کامل‌شده‌ی ۹۰ روز اخیر) در تاریخ ۲ آذر ۱۴۰۵ / ۲۴ نوامبر ۲۰۲۶. قبل از فیس و ریبیت «سود قبل از کارمزد» است. وین‌ریت بالا یعنی بردهای کوچک و باخت‌های بزرگ‌تر؛ پایین‌تر دیده می‌شه.</p>
+  </section>
+
   <section class="view" id="v-paper" hidden>
     <div class="card">
       <div class="row"><span class="sub">موجودی مجازی (با سود باز)</span><span class="sub" id="p-day"></span></div>
@@ -201,7 +212,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
 </div>
 <script>
 (function () {
-  var START = 1000, GOAL = 1500, DATA = null, W = {}, SETS = { whale: [], hw: [], gold: [] }, WALLETS = [];
+  var START = 1000, GOAL = 1500, DATA = null, W = {}, SETS = { whale: [], hw: [], gold: [], scalp: [] }, WALLETS = [];
   var seen = {}, newAt = {}, aiOpen = {}, marks = {}, firstLoad = true, loadErr = null;
   var minUsd = 500, winH = 24, onlyOpen = false, touching = false, pending = false;
   var M = { open: [], closed: [], seq: 1 }, MSG = {}, live = false;
@@ -298,7 +309,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
 
   function ingest(data) {
     data.settings = data.settings || { min_usd: 2000, margin: 50, leverage: 5, max_open: 6 }; data.marks = data.marks || {}; data.open = data.open || []; data.closed = data.closed || []; data.events = data.events || []; data.equity = data.equity != null ? data.equity : START; data.balance = data.balance != null ? data.balance : START; data.updated = data.updated || Date.now();
-    DATA = data; W = {}; SETS = { whale: [], hw: [], gold: [] }; WALLETS = [];
+    DATA = data; W = {}; SETS = { whale: [], hw: [], gold: [], scalp: [] }; WALLETS = [];
     Object.keys(data.marks || {}).forEach(function (c) { if (!marks[c] || !marks[c].live) marks[c] = { px: Number(data.marks[c]) }; });
     (data.wallets || []).forEach(function (w) {
       var d = { w: w, status: w.status, groups: w.groups || [], sum: w.sum || null, prof: w.prof || null, coins: w.coins || {}, top: [],
@@ -308,7 +319,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
       d.top = Object.keys(d.coins).filter(function (k) { return /\|\*$/.test(k); }).map(function (k) { return d.coins[k]; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 4);
       d.groups.forEach(function (g) { g.addr = w.addr; if (!seen[g.id]) { seen[g.id] = true; if (!firstLoad) newAt[g.id] = Date.now(); } });
       W[w.addr] = d; WALLETS.push(w);
-      SETS[w.group === "نهنگ" ? "whale" : w.group === "طلا" ? "gold" : "hw"].push(w);
+      SETS[w.group === "نهنگ" ? "whale" : w.group === "طلا" ? "gold" : w.group === "اسکلپ" ? "scalp" : "hw"].push(w);
     });
     firstLoad = false;
   }
@@ -399,6 +410,24 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
       M.closed.slice(0, 10).forEach(function (t) { box.appendChild(el("p", "sub num", t.coin + " " + (t.side === "long" ? "لانگ" : "شورت") + " · " + price(t.entry) + " ← " + price(t.exit) + " · " + (t.pnl >= 0 ? "+" : "-") + money(Math.abs(t.pnl)).replace("-", "") + " · از " + t.tag)); });
     }
   }
+  var SC = [
+    { tag: "bb16", addr: "0xbb160cb61e694570f9d570f9fcde7c61dd2143ad", market: "بیت‌کوین (BTC)", n: "۷۹٬۹۳۵", wr: "۶۷٫۵٪", hold: "حدود ۹۷ ثانیه", pnl: "+$57,384", fees: "ریبیت ≈ $20,917 به نفع خودش", worst: "−$358", liq: "۵۰۲", note: "ربات بازارساز: لانگ و شورت پشت‌سرهم روی BTC، هر پوزیشن چند ثانیه تا چند دقیقه. بردهای ریز و باخت‌های کم‌حجم‌تر. بیشترین سود از خودِ ریبیت کارمزد است که ما نداریم." },
+    { tag: "2688", addr: "0x2688d3ab9d031e11a0bd4c0fc31e35b4274a23f2", market: "۱۲ بازار: سهام و کالا روی xyz (DRAM، نفت CL، آمازون، SOXL، نقره…)", n: "۳۴۱٬۸۸۰", wr: "۶۰٫۷٪", hold: "حدود ۱۵۲ ثانیه", pnl: "+$113,006", fees: "ریبیت ≈ $10,275 به نفع خودش", worst: "−$2,928", liq: "۱٬۹۳۵", note: "اسکلپر چندبازاره‌ی خیلی پرتکرار. در ۹۰ روز تقریباً ۳۴۲ هزار پوزیشن. طلا در آخرین معاملاتش دیده نشد." },
+    { tag: "b040", addr: "0xb040d8d9b0c9b1e4f3d51a010e8c1caf36dadda7", market: "بیشتر SOXL (۹ کوین، از ۱۸ آبان فعال)", n: "۷۵۸", wr: "۸۹٫۱٪", hold: "حدود ۱۴ دقیقه", pnl: "+$5,481 قبل از کارمزد", fees: "کارمزد $2,589 + کارمزد بیلدر $1,829 (خالص ≈ +$1,063)", worst: "−$1,459", liq: "۱۰", note: "وین‌ریت ۸۹٪ از ۷۵۸ پوزیشن. اما میانگین هر برد فقط حدود ۷ دلار است و بدترین باخت ۱٬۴۵۹ دلار؛ یک باخت بزرگ چند ده برد را پاک می‌کند. تاریخچه‌اش فقط ۱۵ روز است." }
+  ];
+  function renderScalpers() {
+    var box = $("sc-list"); if (!box) return; box.textContent = "";
+    SC.forEach(function (s) {
+      var c = el("article", "card"), r = el("div", "row"), d = W[s.addr], last = d && d.groups.length ? d.groups[d.groups.length - 1].last : null;
+      r.appendChild(el("strong", null, s.tag + "…")); r.appendChild(el("span", "pill good", "وین‌ریت پوزیشن " + s.wr)); c.appendChild(r);
+      c.appendChild(el("p", "sub", s.market));
+      var g2 = el("div", "grid2");
+      stat(g2, "پوزیشن بسته‌شده", s.n); stat(g2, "میانگین نگهداری", s.hold); stat(g2, "سود ۹۰ روز", s.pnl); stat(g2, "بدترین باخت", s.worst); stat(g2, "تصفیه", s.liq);
+      stat(g2, "آخرین معامله", last ? ago(last) : "—"); c.appendChild(g2);
+      c.appendChild(el("p", "sub", "کارمزد: " + s.fees)); c.appendChild(el("p", "ai", s.note));
+      box.appendChild(c);
+    });
+  }
   function autoText(g, d) {
     var side = sideOf(g.dir), v = verdict(d, g), rk = riskOf(d, g), sc = d.score, pro = [], con = [], cs = d.coins[g.coin + "|" + side], mk = marks[g.coin], avgPx = g.usd / g.size;
     if (sc) { if (sc.total >= 65) pro.push("امتیاز کلی نهنگ بالاست (" + sc.total + " از ۱۰۰)"); else if (sc.total < 45) con.push("امتیاز کلی نهنگ پایینه (" + sc.total + " از ۱۰۰)"); }
@@ -431,6 +460,8 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     renderFeed(SETS.whale, "feed", function (g) { return g.usd >= minUsd && g.last >= wf && (!onlyOpen || isOpenDir(g.dir)); });
     renderFeed(SETS.hw, "hw-feed", function () { return true; });
     renderFeed(SETS.gold, "gold-feed", function (g) { return /gold/i.test(g.coin); });
+    renderFeed(SETS.scalp, "scalp-feed", function (g) { return isOpenDir(g.dir) && g.last >= Date.now() - 30 * 60000; });
+    renderScalpers();
     renderWallets(SETS.whale, "wallets"); renderWallets(SETS.hw, "hw-wallets"); renderWallets(SETS.gold, "gold-wallets"); renderPaper(); renderManual(); updateNet();
   }
   function renderBanner() {
@@ -580,7 +611,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
   var wsel = $("win-h"); wsel.value = String(winH); if (wsel.value !== String(winH)) { wsel.value = "24"; winH = 24; }
   wsel.addEventListener("change", function () { winH = Number(wsel.value) || 24; try { localStorage.setItem("whale-gh-win", String(winH)); } catch (e) {} renderAll(); });
   $("only-open").addEventListener("change", function () { onlyOpen = $("only-open").checked; renderAll(); });
-  var TABS = { feed: $("t-feed"), wallets: $("t-wallets"), paper: $("t-paper"), hw: $("t-hw"), gold: $("t-gold") }, VIEWS = { feed: $("v-feed"), wallets: $("v-wallets"), paper: $("v-paper"), hw: $("v-hw"), gold: $("v-gold") };
+  var TABS = { feed: $("t-feed"), wallets: $("t-wallets"), paper: $("t-paper"), hw: $("t-hw"), gold: $("t-gold"), scalp: $("t-scalp") }, VIEWS = { feed: $("v-feed"), wallets: $("v-wallets"), paper: $("v-paper"), hw: $("v-hw"), gold: $("v-gold"), scalp: $("v-scalp") };
   function show(name) { if (!TABS[name]) name = "feed"; Object.keys(TABS).forEach(function (k) { TABS[k].setAttribute("aria-selected", String(k === name)); VIEWS[k].hidden = k !== name; }); }
   Object.keys(TABS).forEach(function (k) { TABS[k].addEventListener("click", function () { show(k); try { location.hash = k; } catch (e) {} }); });
   try { show((location.hash || "").replace("#", "")); window.addEventListener("hashchange", function () { show((location.hash || "").replace("#", "")); }); } catch (e) { show("feed"); }

@@ -294,7 +294,7 @@ def analyze(fills):
 
 def refresh_history(hist, cfg, now):
     ws = hist.setdefault("wallets", {})
-    due = [w for w in cfg["wallets"] if now - ws.get(w["addr"], {}).get("at", 0) > HIST_TTL]
+    due = [w for w in cfg["wallets"] if w.get("hist", True) and now - ws.get(w["addr"], {}).get("at", 0) > HIST_TTL]
     due.sort(key=lambda w: ws.get(w["addr"], {}).get("at", 0))
     changed = False
     t0 = time.time()
@@ -380,7 +380,8 @@ def main():
     for w in cfg["wallets"]:
         try:
             fills = post({"type": "userFills", "user": w["addr"]})
-            process_wallet(st, cfg, w, fills, marks, now)
+            if w.get("copy", True):  # scalpers hold 1-15 min: a 5-min poll can't copy them, so they are watch-only
+                process_wallet(st, cfg, w, fills, marks, now)
             feeds[w["addr"]] = make_groups(w["tag"], w["addr"], fills, now)
         except Exception as e:
             print("wallet failed", w["tag"], e, file=sys.stderr)
