@@ -1,5 +1,5 @@
 {
- "balance": 1069.2213749354446,
+ "balance": 1045.9154271217167,
  "open": {
   "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|PUMP|short": {
    "key": "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|PUMP|short",
@@ -120,20 +120,6 @@
    "lev": 5,
    "opened_at": 1795443423697,
    "whale_usd": 90167.64768000001
-  },
-  "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9|xyz:SKHX|long": {
-   "key": "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9|xyz:SKHX|long",
-   "tag": "a70a",
-   "group": "طلا",
-   "coin": "xyz:SKHX",
-   "src": "xyz:SKHX",
-   "side": "long",
-   "entry": 886.9610085,
-   "whale_px": 886.0388020050125,
-   "margin": 50,
-   "lev": 5,
-   "opened_at": 1795444010630,
-   "whale_usd": 21211.768920000002
   },
   "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|AERO|short": {
    "key": "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|AERO|short",
@@ -364,6 +350,24 @@
    "pnl": 0.20063505755389024,
    "closed_at": 1795553519605,
    "reason": "whale"
+  },
+  {
+   "key": "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9|xyz:SKHX|long",
+   "tag": "a70a",
+   "group": "طلا",
+   "coin": "xyz:SKHX",
+   "src": "xyz:SKHX",
+   "side": "long",
+   "entry": 886.9610085,
+   "whale_px": 886.0388020050125,
+   "margin": 50,
+   "lev": 5,
+   "opened_at": 1795444010630,
+   "whale_usd": 21211.768920000002,
+   "exit": 805.0734055,
+   "pnl": -23.30594781372794,
+   "closed_at": 1795556937436,
+   "reason": "whale"
   }
  ],
  "pending": {
@@ -397,14 +401,6 @@
   "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37": 1795556768136
  },
  "events": [
-  {
-   "t": 1795443263375,
-   "text": "c191 باز کرد xyz:KR200 short (~$8,605) ولی سقف 15 پوزیشن باز پر بود"
-  },
-  {
-   "t": 1795443991480,
-   "text": "c191 باز کرد SOL short (~$67,338) ولی سقف 15 پوزیشن باز پر بود"
-  },
   {
    "t": 1795442767609,
    "text": "c191 باز کرد xyz:BABA short (~$12,101) ولی سقف 15 پوزیشن باز پر بود"
@@ -1196,8 +1192,16 @@
   {
    "t": 1795556745885,
    "text": "c191 باز کرد HYPE short (~$21,284) ولی سقف 15 پوزیشن باز پر بود"
+  },
+  {
+   "t": 1795556937436,
+   "text": "کپی مجازی بسته شد (نهنگ بست): a70a xyz:SKHX لانگ سود/زیان -23.31$"
+  },
+  {
+   "t": 1795556937436,
+   "text": "همگام‌سازی: a70a دیگر xyz:SKHX long ندارد؛ کپی مجازی بسته شد"
   }
  ],
- "data_ts": 1795556854955,
+ "data_ts": 1795556937436,
  "started": 1795416439329
 }
