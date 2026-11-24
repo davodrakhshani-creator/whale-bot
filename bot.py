@@ -326,6 +326,22 @@ def refresh_history(hist, cfg, now):
     return changed
 
 
+def fetch_orders(addr):
+    """Whale's open stop / take-profit style orders (public). Only reduce-only or trigger orders on perps."""
+    out = []
+    for o in post({"type": "frontendOpenOrders", "user": addr}):
+        c = o.get("coin", "")
+        if is_spot(c) or not (o.get("isTrigger") or o.get("reduceOnly") or o.get("isPositionTpsl")):
+            continue
+        try:
+            px = float(o.get("triggerPx") if o.get("isTrigger") and float(o.get("triggerPx") or 0) > 0 else o.get("limitPx"))
+        except Exception:
+            continue
+        out.append({"coin": c, "side": o.get("side"), "px": px, "type": o.get("orderType", ""), "sz": float(o.get("sz", 0) or 0),
+                    "ts": int(o.get("timestamp", 0) or 0)})
+    return out[:40]
+
+
 def make_groups(tag, addr, fills, now):
     """Same-coin, same-direction fills less than GAP apart become one 'move' (feed card)."""
     open_g, groups = {}, []
@@ -353,7 +369,7 @@ def make_groups(tag, addr, fills, now):
     return groups[-FEED_MAX:]
 
 
-def build_data(st, cfg, marks, now, hist, feeds, prev):
+def build_data(st, cfg, marks, now, hist, feeds, prev, ords):
     opens, upl = [], 0.0
     for p in st["open"].values():
         m = marks.get(p["coin"])
@@ -368,6 +384,7 @@ def build_data(st, cfg, marks, now, hist, feeds, prev):
         addr, h = w["addr"], hist.get("wallets", {}).get(w["addr"], {})
         feed = feeds.get(addr)
         entry = {"tag": w["tag"], "addr": addr, "group": w.get("group", ""), "status": "ok" if feed is not None else "error", "at": now,
+                 "orders": ords.get(addr) if ords.get(addr) is not None else old.get(addr, {}).get("orders", []),
                  "groups": feed if feed is not None else old.get(addr, {}).get("groups", []),
                  "hist_at": h.get("at"), "sum": h.get("sum"), "prof": h.get("prof"), "coins": h.get("coins", {})}
         if feed is None:
@@ -391,13 +408,17 @@ def main():
     hist = load(HIST_F, {"wallets": {}})
     prev = load(DATA_F, None)
     marks = marks_now()
-    feeds = {}
+    feeds, ords = {}, {}
     for w in cfg["wallets"]:
         try:
             fills = post({"type": "userFills", "user": w["addr"]})
             if w.get("copy", True):  # scalpers hold 1-15 min: a 5-min poll can't copy them, so they are watch-only
                 process_wallet(st, cfg, w, fills, marks, now)
             feeds[w["addr"]] = make_groups(w["tag"], w["addr"], fills, now)
+            try:
+                ords[w["addr"]] = fetch_orders(w["addr"])
+            except Exception as e:
+                print("orders failed", w["tag"], e, file=sys.stderr)
         except Exception as e:
             print("wallet failed", w["tag"], e, file=sys.stderr)
     for key, p in list(st["open"].items()):
@@ -407,7 +428,7 @@ def main():
     if refresh_history(hist, cfg, now):
         with open(HIST_F, "w", encoding="utf-8") as f:
             json.dump(hist, f, ensure_ascii=False)
-    data = build_data(st, cfg, marks, now, hist, feeds, prev)
+    data = build_data(st, cfg, marks, now, hist, feeds, prev, ords)
     def core(d):
         d = {k: v for k, v in (d or {}).items() if k not in ("updated", "marks")}
         d["wallets"] = [{k: v for k, v in w.items() if k != "at"} for w in d.get("wallets", [])]

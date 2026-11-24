@@ -117,6 +117,11 @@ input[type="number"] { width: 100%; min-width: 0; }
 .tr .side-s { color: var(--sell); font-weight: 700; }
 .tr .btn { padding: 4px 9px; font-size: .7rem; margin-top: 5px; }
 .tsum { display: flex; justify-content: space-between; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--line); font-size: .82rem; font-weight: 700; }
+.ov { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 50; display: flex; align-items: flex-end; justify-content: center; }
+.ov[hidden] { display: none; }
+.ovbox { background: var(--surface); color: var(--fg); width: 100%; max-width: 720px; max-height: 92vh; overflow: auto; border-radius: 16px 16px 0 0; padding: 14px; padding-bottom: max(14px, env(safe-area-inset-bottom, 0px)); }
+.chartbox { direction: ltr; width: 100%; min-height: 320px; margin: 8px 0; }
+.chartlg { display: flex; flex-direction: column; gap: 2px; font-size: .78rem; }
 body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
 </style>
 </head>
@@ -328,7 +333,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
       if (d.sum && d.groups.length) { var mx = Math.max.apply(null, d.groups.map(function (g) { return g.last; })); if (!(Date.parse(d.sum.lastActivityAt) >= mx)) d.sum = Object.assign({}, d.sum, { lastActivityAt: new Date(mx).toISOString() }); }
       d.lc0 = !!d.prof; d.score = scoreOf(d.sum);
       d.top = Object.keys(d.coins).filter(function (k) { return /\|\*$/.test(k); }).map(function (k) { return d.coins[k]; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 4);
-      d.groups.forEach(function (g) { g.addr = w.addr; if (!seen[g.id]) { seen[g.id] = true; if (!firstLoad) newAt[g.id] = Date.now(); } });
+      d.orders = w.orders || []; d.groups.forEach(function (g) { g.addr = w.addr; if (!seen[g.id]) { seen[g.id] = true; if (!firstLoad) newAt[g.id] = Date.now(); } });
       W[w.addr] = d; WALLETS.push(w);
       SETS[w.group === "نهنگ" ? "whale" : w.group === "طلا" ? "gold" : w.group === "اسکلپ" ? "scalp" : "hw"].push(w);
     });
@@ -608,6 +613,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
         else if (g.usd < (DATA.settings.min_usd || 0)) acts.appendChild(el("span", "pill", "زیر حداقل حجم کپی (" + usd(DATA.settings.min_usd) + ")"));
         else acts.appendChild(el("span", "pill mid", skipWhy(g)));
         if (!cp && !mine) { var mb = el("button", "btn primary", "کپی دستی"); mb.type = "button"; mb.addEventListener("click", function () { manualCopy(g); }); acts.appendChild(mb); }
+        var cb = el("button", "btn", "چارت"); cb.type = "button"; cb.addEventListener("click", function () { openChart(g); }); acts.appendChild(cb);
         var ab = el("button", "btn", aiOpen[g.id] ? "بستن تحلیل" : "تحلیل خودکار"); ab.type = "button";
         ab.addEventListener("click", function () { aiOpen[g.id] = !aiOpen[g.id]; renderAll(); }); acts.appendChild(ab);
         rec.appendChild(acts);
@@ -731,6 +737,61 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     $("hw-note").textContent = "این لیست یک عکسِ ثابت از ۲۲ نوامبر ۲۰۲۶ است (از دیتای Coinversa) و خودش به‌روز نمی‌شه. ملیت یا هویت صاحب کیف‌پول (مثلاً ژاپنی بودن) از داده معلوم نیست. وین‌ریت و سود گذشته تضمین آینده نیست.";
   }
   renderHW();
+
+  /* ---------- chart (Lightweight Charts) ---------- */
+  var LWC = null, chartState = null;
+  function loadLib() {
+    if (window.LightweightCharts) return Promise.resolve();
+    if (LWC) return LWC;
+    LWC = new Promise(function (res, rej) { var s = document.createElement("script"); s.src = "https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"; s.onload = res; s.onerror = function () { LWC = null; rej(new Error("کتابخانه‌ی چارت لود نشد")); }; document.head.appendChild(s); });
+    return LWC;
+  }
+  function levelsFor(g) {
+    var d = W[g.addr], side = sideOf(g.dir), open = isOpenDir(g.dir), avg = g.usd / g.size, L = [];
+    var buyish = g.side === "BUY";
+    L.push({ price: avg, color: buyish ? "#16a34a" : "#dc2626", title: (open ? "ورود نهنگ" : "خروج نهنگ") + " (" + (side === "long" ? "لانگ" : "شورت") + ")", style: 0 });
+    var closeSide = side === "long" ? "A" : "B", found = false;
+    if (open) (d.orders || []).forEach(function (o) {
+      if (o.coin !== g.coin || o.side !== closeSide) return;
+      var tp = /take/i.test(o.type) || (side === "long" ? o.px > avg : o.px < avg), nm = tp ? "تارگت نهنگ" : "استاپ نهنگ";
+      var pct = Math.abs(o.px - avg) / avg * 100;
+      L.push({ price: o.px, color: tp ? "#2563eb" : "#f59e0b", title: nm + " (" + pct.toFixed(1) + "٪)", style: 2 }); found = true;
+    });
+    return { lines: L, found: found, open: open };
+  }
+  function openChart(g) {
+    var ov = $("chart-ov"); if (!ov) { ov = el("div", "ov"); ov.id = "chart-ov"; document.body.appendChild(ov); }
+    ov.textContent = ""; ov.hidden = false;
+    var box = el("div", "ovbox"), top = el("div", "row"), tt = el("b", null, g.coin + " · " + g.tag), x = el("button", "btn", "بستن"); x.type = "button";
+    x.addEventListener("click", function () { ov.hidden = true; ov.textContent = ""; chartState = null; });
+    top.appendChild(tt); top.appendChild(x); box.appendChild(top);
+    var iv = el("div", "acts"), cont = el("div", "chartbox"), info = el("div", "sub"), lv = levelsFor(g);
+    var cur = "15m";
+    ["5m", "15m", "1h", "4h"].forEach(function (k) { var b = el("button", "btn" + (k === cur ? " primary" : ""), k); b.type = "button"; b.addEventListener("click", function () { cur = k; [].forEach.call(iv.children, function (c) { c.className = "btn" + (c.textContent === k ? " primary" : ""); }); draw(); }); iv.appendChild(b); });
+    box.appendChild(iv); box.appendChild(cont); box.appendChild(info); ov.appendChild(box);
+    var lg = el("div", "chartlg"); lv.lines.forEach(function (l) { var s = el("span", "num"); s.style.color = l.color; s.textContent = "— " + l.title + ": " + price(l.price); lg.appendChild(s); }); box.appendChild(lg);
+    box.appendChild(el("p", "sub", lv.open ? (lv.found ? "استاپ و تارگت از سفارش‌های بازِ همین لحظه‌ی نهنگ روی صرافی خوانده شده؛ ممکنه بعداً عوض کنه." : "نهنگ الان روی این کوین استاپ یا تارگتی نگذاشته (احتمالاً دستی مدیریت می‌کنه). عددی از خودم نمی‌سازم.") : "این حرکت خروج بود، پس استاپ/تارگت نشان داده نمی‌شود."));
+    var tvs = { "1h": "60", "4h": "240", "5m": "5", "15m": "15" };
+    var a = el("a", "btn", "باز کردن در TradingView"); a.target = "_blank"; a.rel = "noopener";
+    a.href = "https://www.tradingview.com/chart/?symbol=" + encodeURIComponent((/gold/i.test(g.coin) ? "OANDA:XAUUSD" : "BYBIT:" + g.coin.replace(/^[a-z]+:/i, "").replace(/^k/, "") + "USDT.P")); box.appendChild(a);
+    function draw() {
+      info.textContent = "در حال گرفتن کندل‌ها...";
+      var ms = { "5m": 300000, "15m": 900000, "1h": 3600000, "4h": 14400000 }[cur], end = Date.now(), start = end - ms * 200;
+      Promise.all([loadLib(), tfetch("https://api.hyperliquid.xyz/info", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type: "candleSnapshot", req: { coin: g.coin, interval: cur, startTime: start, endTime: end } }) }, 10000).then(function (r) { return r.json(); })])
+        .then(function (rs) {
+          var cs = rs[1]; if (!cs || !cs.length) throw new Error("کندلی برای این کوین نیومد");
+          cont.textContent = ""; var dark = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches;
+          var ch = LightweightCharts.createChart(cont, { height: 320, layout: { background: { color: dark ? "#14161a" : "#ffffff" }, textColor: dark ? "#c8ccd2" : "#333" }, grid: { vertLines: { color: dark ? "#23262c" : "#eee" }, horzLines: { color: dark ? "#23262c" : "#eee" } }, timeScale: { timeVisible: true, secondsVisible: false }, rightPriceScale: { borderVisible: false } });
+          var sr = ch.addCandlestickSeries({ upColor: "#16a34a", downColor: "#dc2626", borderVisible: false, wickUpColor: "#16a34a", wickDownColor: "#dc2626" });
+          sr.setData(cs.map(function (c) { return { time: Math.floor(c.t / 1000), open: +c.o, high: +c.h, low: +c.l, close: +c.c }; }));
+          lv.lines.forEach(function (l) { sr.createPriceLine({ price: l.price, color: l.color, lineWidth: 2, lineStyle: l.style, axisLabelVisible: true, title: l.title }); });
+          var t0 = Math.floor(g.first / 1000), t1 = cs[0].t / 1000;
+          if (t0 >= t1) { var bt = cs.map(function (c) { return Math.floor(c.t / 1000); }).filter(function (t) { return t <= t0; }).pop(); if (bt) sr.setMarkers([{ time: bt, position: g.side === "BUY" ? "belowBar" : "aboveBar", color: g.side === "BUY" ? "#16a34a" : "#dc2626", shape: g.side === "BUY" ? "arrowUp" : "arrowDown", text: "نهنگ" }]); }
+          ch.timeScale().fitContent(); chartState = ch; info.textContent = "کندل‌ها از Hyperliquid (" + cur + ")";
+        }).catch(function (e) { info.textContent = "چارت نیومد: " + ((e && e.message) || e); });
+    }
+    draw();
+  }
   $("refresh").addEventListener("click", refreshNow);
   window.addEventListener("online", refreshNow); window.addEventListener("offline", function () { updateNet(); });
   document.addEventListener("visibilitychange", function () { if (!document.hidden) refreshNow(); });
