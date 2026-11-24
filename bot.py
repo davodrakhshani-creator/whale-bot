@@ -168,6 +168,20 @@ def process_wallet(st, cfg, w, fills, marks, now):
         coin = f.get("coin", "")
         if coin.startswith("@") or "/" in coin:
             continue
+        d = (f.get("dir") or "").strip().lower()
+        if ">" in d:  # flip, e.g. "Long > Short": old side closed, remainder opens the other side
+            a, b = [x.strip() for x in d.split(">", 1)]
+            px, sz, t = float(f["px"]), float(f["sz"]), int(f["time"])
+            okey = f"{addr}|{coin}|{a}"
+            if okey in st["open"]:
+                close_paper(st, okey, (marks.get("PAXG") or px) if is_gold(coin) else px, t, "whale")
+            start = float(f.get("startPosition", 0) or 0)
+            rem = abs(start + (sz if f.get("side") == "B" else -sz))
+            if rem * px > 0 and b in ("long", "short"):
+                pk = f"{addr}|{coin}|{b}"
+                p = {"usd": rem * px, "size": rem, "last": t}
+                st["pending"][pk] = p
+            continue
         kind, side = parse_dir(f.get("dir"))
         if not kind:
             continue
