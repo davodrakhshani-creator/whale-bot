@@ -105,6 +105,18 @@ input[type="number"] { width: 100%; min-width: 0; }
 .fields label { display: flex; flex-direction: column; gap: 2px; font-size: .8rem; color: var(--muted); min-width: 0; }
 .fields .full { grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 8px; }
 [hidden] { display: none !important; }
+.tbl { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface); }
+.tr { display: grid; grid-template-columns: 1.35fr 1.15fr .9fr; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--line); align-items: center; font-size: .82rem; }
+.tr > div { min-width: 0; }
+.tr.th { border-top: 0; color: var(--muted); font-size: .7rem; background: var(--accent-soft); padding-top: 7px; padding-bottom: 7px; }
+.tr .sub { margin: 2px 0 0; font-size: .7rem; }
+.tr .pnl { text-align: left; font-weight: 700; }
+.tr .pnl small { display: block; font-weight: 500; font-size: .7rem; }
+.tr .tag { display: inline-block; font-size: .64rem; padding: 1px 6px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); margin-inline-start: 4px; }
+.tr .side-l { color: var(--buy); font-weight: 700; }
+.tr .side-s { color: var(--sell); font-weight: 700; }
+.tr .btn { padding: 4px 9px; font-size: .7rem; margin-top: 5px; }
+.tsum { display: flex; justify-content: space-between; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--line); font-size: .82rem; font-weight: 700; }
 body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
 </style>
 </head>
@@ -198,10 +210,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
       <h2>ربات چطور کپی می‌کنه</h2>
       <p class="sub" id="p-rules"></p>
     </div>
-    <h2>کپی‌های دستی من</h2>
-    <p class="sub">اگه ربات چیزی را کپی نکرده بود، از فید «کپی دستی» بزن. این‌ها فقط توی همین مرورگر (روی همین گوشی) ذخیره می‌شن و جدا از دفتر ربات‌اند. قیمت را از Hyperliquid زنده می‌گیره و اگه نشد از آخرین داده‌ی ربات.</p>
-    <div class="list" id="p-manual"></div>
-    <h2>پوزیشن‌های باز (ربات)</h2>
+    <h2>پوزیشن‌های باز</h2>
     <div class="list" id="p-open"></div>
     <h2>تاریخچه</h2>
     <div class="list" id="p-closed"></div>
@@ -382,7 +391,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
   function closeManual(p, px) {
     var n = p.margin * p.lev, d = p.side === "long" ? 1 : -1, SL = 0.0003, ex = p.side === "long" ? px * (1 - SL) : px * (1 + SL);
     var pnl = Math.max(-p.margin, n * d * (ex - p.entry) / p.entry - n * 0.00045 * 2);
-    M.open = M.open.filter(function (o) { return o.id !== p.id; }); M.closed.unshift({ id: p.id, coin: p.coin, side: p.side, lev: p.lev, margin: p.margin, entry: p.entry, exit: ex, pnl: pnl, tag: p.tag, closedAt: Date.now() });
+    M.open = M.open.filter(function (o) { return o.id !== p.id; }); M.closed.unshift({ id: p.id, srcId: p.srcId, kind: "manual", coin: p.coin, side: p.side, lev: p.lev, margin: p.margin, entry: p.entry, exit: ex, pnl: pnl, tag: p.tag, closedAt: Date.now() });
     M.closed = M.closed.slice(0, 100); saveM(); renderAll();
   }
   function whaleClosedAfter(p) {
@@ -431,6 +440,53 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
       box.appendChild(c);
     });
   }
+  function renderLedger() {
+    renderPaper();
+    var rowsO = [], rowsC = [], manU = 0, manR = 0;
+    (DATA.open || []).forEach(function (p) { rowsO.push({ coin: p.coin, side: p.side, lev: p.lev, entry: p.entry, mark: p.mark, u: p.upnl, margin: p.margin, tag: p.tag, ts: p.opened_at, kind: "ربات" }); });
+    M.open.forEach(function (p) { var mk = marks[p.coin], u = mk ? calcU(p, mk.px) : null; if (u != null) manU += u; rowsO.push({ coin: p.coin, side: p.side, lev: p.lev, entry: p.entry, mark: mk ? mk.px : null, u: u, margin: p.margin, tag: p.tag, ts: p.openedAt, kind: "دستی", man: p }); });
+    (DATA.closed || []).forEach(function (t) { rowsC.push({ coin: t.coin, side: t.side, lev: t.lev, entry: t.entry, exit: t.exit, pnl: t.pnl, margin: t.margin, tag: t.tag, ts: t.closed_at, kind: "ربات", why: t.reason === "whale" ? "نهنگ بست" : t.reason === "liq" ? "تصفیه" : "دستی" }); });
+    M.closed.forEach(function (t) { manR += t.pnl; rowsC.push({ coin: t.coin, side: t.side, lev: t.lev, entry: t.entry, exit: t.exit, pnl: t.pnl, margin: t.margin, tag: t.tag, ts: t.closedAt, kind: "دستی", why: "بستی" }); });
+    rowsO.sort(function (a, b) { return b.ts - a.ts; }); rowsC.sort(function (a, b) { return b.ts - a.ts; });
+    var eq = DATA.equity + manR + manU, pct = clamp((eq - START) / (GOAL - START)) * 100, tot = eq - START;
+    $("p-eq").textContent = money(eq); $("p-bar").style.width = pct.toFixed(1) + "%"; $("p-pct").textContent = pct.toFixed(0) + "٪ از مسیر هدف";
+    var ps = $("p-stats"); ps.textContent = "";
+    var wins = rowsC.filter(function (t) { return t.pnl > 0; }).length;
+    stat(ps, "سود/زیان کل", (tot >= 0 ? "+" : "-") + money(Math.abs(tot)).replace("-", "")); stat(ps, "پوزیشن باز", String(rowsO.length));
+    stat(ps, "بسته‌شده", String(rowsC.length)); stat(ps, "وین‌ریت", rowsC.length ? Math.round(100 * wins / rowsC.length) + "٪" : "—");
+    function sd(side) { return el("span", side === "long" ? "side-l" : "side-s", side === "long" ? "لانگ" : "شورت"); }
+    function sgn(v) { return (v >= 0 ? "+" : "-") + money(Math.abs(v)).replace("-", ""); }
+    var ol = $("p-open"); ol.textContent = "";
+    if (!rowsO.length) ol.appendChild(el("p", "empty", "هنوز پوزیشنی باز نیست."));
+    else {
+      var tb = el("div", "tbl"), th = el("div", "tr th"); ["کوین", "ورود ← الان", "سود/زیان"].forEach(function (x) { th.appendChild(el("div", null, x)); }); tb.appendChild(th);
+      rowsO.forEach(function (r) {
+        var tr = el("div", "tr"), c1 = el("div"), c2 = el("div", "num"), c3 = el("div", "pnl num " + (r.u == null ? "sub" : r.u >= 0 ? "up" : "down"));
+        var l1 = el("div"); l1.appendChild(el("strong", null, r.coin + " ")); l1.appendChild(sd(r.side)); l1.appendChild(el("span", "tag", r.kind)); c1.appendChild(l1);
+        c1.appendChild(el("p", "sub", r.lev + "x · " + r.tag + " · " + ago(r.ts)));
+        if (r.man) { var b1 = el("button", "btn primary", "بستن"); b1.type = "button"; b1.disabled = r.mark == null; b1.addEventListener("click", function () { closeManual(r.man, marks[r.man.coin].px); }); c1.appendChild(b1);
+          var wc = whaleClosedAfter(r.man); if (wc) { var b2 = el("button", "btn", "با قیمت نهنگ"); b2.type = "button"; b2.addEventListener("click", function () { closeManual(r.man, wc.px); }); c1.appendChild(b2); c1.appendChild(el("p", "sub", "نهنگ بست")); } }
+        c2.appendChild(el("div", null, price(r.entry))); c2.appendChild(el("p", "sub", r.mark ? "← " + price(r.mark) : "قیمت در راهه"));
+        c3.appendChild(document.createTextNode(r.u == null ? "—" : sgn(r.u))); if (r.u != null) c3.appendChild(el("small", null, (r.u >= 0 ? "+" : "") + (100 * r.u / r.margin).toFixed(1) + "٪"));
+        tr.appendChild(c1); tr.appendChild(c2); tr.appendChild(c3); tb.appendChild(tr);
+      });
+      var su = el("div", "tsum"); su.appendChild(el("span", null, "جمع باز")); var tu = rowsO.reduce(function (s, r) { return s + (r.u || 0); }, 0); su.appendChild(el("span", "num " + (tu >= 0 ? "up" : "down"), sgn(tu))); tb.appendChild(su); ol.appendChild(tb);
+    }
+    var cl = $("p-closed"); cl.textContent = "";
+    if (!rowsC.length) cl.appendChild(el("p", "empty", "هنوز چیزی بسته نشده."));
+    else {
+      var tc = el("div", "tbl"), hc = el("div", "tr th"); ["کوین", "ورود ← خروج", "سود/زیان"].forEach(function (x) { hc.appendChild(el("div", null, x)); }); tc.appendChild(hc);
+      rowsC.slice(0, 40).forEach(function (r) {
+        var tr = el("div", "tr"), c1 = el("div"), c2 = el("div", "num"), c3 = el("div", "pnl num " + (r.pnl >= 0 ? "up" : "down"));
+        var l1 = el("div"); l1.appendChild(el("strong", null, r.coin + " ")); l1.appendChild(sd(r.side)); l1.appendChild(el("span", "tag", r.kind)); c1.appendChild(l1);
+        c1.appendChild(el("p", "sub", r.lev + "x · " + r.tag + " · " + r.why));
+        c2.appendChild(el("div", null, price(r.entry))); c2.appendChild(el("p", "sub", "← " + price(r.exit)));
+        c3.appendChild(document.createTextNode(sgn(r.pnl))); c3.appendChild(el("small", null, (r.pnl >= 0 ? "+" : "") + (100 * r.pnl / r.margin).toFixed(1) + "٪"));
+        tr.appendChild(c1); tr.appendChild(c2); tr.appendChild(c3); tc.appendChild(tr);
+      });
+      var sc2 = el("div", "tsum"); sc2.appendChild(el("span", null, "جمع بسته‌شده‌ها")); var tcl = rowsC.reduce(function (s, r) { return s + r.pnl; }, 0); sc2.appendChild(el("span", "num " + (tcl >= 0 ? "up" : "down"), sgn(tcl))); tc.appendChild(sc2); cl.appendChild(tc);
+    }
+  }
   function autoText(g, d) {
     var side = sideOf(g.dir), v = verdict(d, g), rk = riskOf(d, g), sc = d.score, pro = [], con = [], cs = d.coins[g.coin + "|" + side], mk = marks[g.coin], avgPx = g.usd / g.size;
     if (sc) { if (sc.total >= 65) pro.push("امتیاز کلی نهنگ بالاست (" + sc.total + " از ۱۰۰)"); else if (sc.total < 45) con.push("امتیاز کلی نهنگ پایینه (" + sc.total + " از ۱۰۰)"); }
@@ -465,7 +521,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     renderFeed(SETS.gold, "gold-feed", function (g) { return /gold/i.test(g.coin); });
     renderFeed(SETS.scalp, "scalp-feed", function (g) { return isOpenDir(g.dir) && g.last >= Date.now() - 30 * 60000; });
     renderScalpers();
-    renderWallets(SETS.whale, "wallets"); renderWallets(SETS.hw, "hw-wallets"); renderWallets(SETS.gold, "gold-wallets"); renderPaper(); renderManual(); updateNet();
+    renderWallets(SETS.whale, "wallets"); renderWallets(SETS.hw, "hw-wallets"); renderWallets(SETS.gold, "gold-wallets"); renderLedger(); updateNet();
   }
   function renderBanner() {
     var strip = $("strip"), banner = $("banner"), txt = $("banner-text"); strip.textContent = "";
@@ -521,11 +577,13 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
           wl.forEach(function (x) { rec.appendChild(el("p", "why", "⚠ " + x.t)); });
         }
         var acts = el("div", "acts"), cp = copiedBy(g);
-        if (cp) acts.appendChild(el("span", "pill good", cp.closed ? "ربات این را کپی کرده بود" : "ربات کپی کرد ✓"));
+        var mine = M.open.some(function (p) { return p.srcId === g.id; }) || M.closed.some(function (p) { return p.srcId === g.id; });
+        if (mine) acts.appendChild(el("span", "pill good", "✓ کپی دستی شد"));
+        else if (cp) acts.appendChild(el("span", "pill good", cp.closed ? "ربات این را کپی کرده بود" : "ربات کپی کرد ✓"));
         else if (g.first < (DATA.started || 0)) acts.appendChild(el("span", "pill", "قبل از شروع ربات بود"));
         else if (g.usd < (DATA.settings.min_usd || 0)) acts.appendChild(el("span", "pill", "زیر حداقل حجم کپی (" + usd(DATA.settings.min_usd) + ")"));
         else acts.appendChild(el("span", "pill mid", skipWhy(g)));
-        if (!cp) { var mine = M.open.some(function (p) { return p.srcId === g.id; }), mb = el("button", "btn primary", mine ? "کپی دستی شد" : "کپی دستی"); mb.type = "button"; mb.disabled = mine; mb.addEventListener("click", function () { manualCopy(g); }); acts.appendChild(mb); }
+        if (!cp && !mine) { var mb = el("button", "btn primary", "کپی دستی"); mb.type = "button"; mb.addEventListener("click", function () { manualCopy(g); }); acts.appendChild(mb); }
         var ab = el("button", "btn", aiOpen[g.id] ? "بستن تحلیل" : "تحلیل خودکار"); ab.type = "button";
         ab.addEventListener("click", function () { aiOpen[g.id] = !aiOpen[g.id]; renderAll(); }); acts.appendChild(ab);
         rec.appendChild(acts);
