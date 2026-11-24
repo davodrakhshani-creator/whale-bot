@@ -1,30 +1,38 @@
 name: whale-bot
+# GitHub's "*/5" schedule is often delayed by hours. So each run stays alive ~5h and polls every 4.5 min itself;
+# the schedule/dispatch/push triggers only restart it (a new run replaces the old one; state is committed each loop).
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "7 */5 * * *"
   workflow_dispatch:
+  push:
+    paths: ["bot.py", "config.json", ".github/workflows/run.yml"]
 permissions:
   contents: write
 concurrency:
   group: whale-bot
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 345
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: python bot.py
-      - name: Save state
+      - name: Poll loop
         run: |
           git config user.name "whale-bot"
           git config user.email "whale-bot@users.noreply.github.com"
-          git add -A
-          if git diff --cached --quiet; then echo "no changes"; else
-            git commit -m "update $(date -u +%FT%TZ)"
-            git pull --rebase -q || true
-            git push
-          fi
+          END=$(( $(date +%s) + 5*3600 + 1800 ))
+          while [ $(date +%s) -lt $END ]; do
+            python bot.py || echo "bot run failed"
+            git add -A
+            if ! git diff --cached --quiet; then
+              git commit -q -m "update $(date -u +%FT%TZ)"
+              git pull --rebase -q || { git rebase --abort 2>/dev/null; git pull --rebase -X theirs -q || true; }
+              git push -q || echo "push failed"
+            fi
+            sleep 270
+          done
