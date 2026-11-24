@@ -20,6 +20,10 @@ HIST_MAX_PAGES = 6              # 2000 fills per page
 GAP = 5 * 60 * 1000             # same coin+direction fills closer than this = one move
 FEED_WINDOW = 72 * 3600 * 1000
 FEED_MAX = 60
+CAND_PUB = os.path.join(ROOT, "docs", "candles.json")      # committed copy the page reads (refreshed every 15 min)
+CAND_WORK = os.path.join(ROOT, ".cache", "candles_work.json")  # working copy, updated every loop, not committed
+CAND_TFS = {"5m": 300000, "15m": 900000, "1h": 3600000, "4h": 14400000}
+CAND_N, CAND_TTL, CAND_PER_RUN, CAND_COINS, CAND_PUBLISH = 150, 12 * 60000, 3, 30, 15 * 60000
 FULL_PER_RUN = 5              # heavy full refreshes per loop (weight ~140 each)
 FULL_EVERY = 270 * 1000        # full feed refresh per wallet at most this often (the cheap new-fills check runs every loop)
 
@@ -235,16 +239,16 @@ def reconcile(st, cfg, w, marks, now):
     mine = [p for p in st["open"].values() if p["key"].startswith(w["addr"] + "|")]
     if not mine:
         return
-    pos = whale_positions(w["addr"], any(p["src"].startswith("xyz:") for p in mine))
+    pos = whale_positions(w["addr"], any((p.get("src") or p["coin"]).startswith("xyz:") for p in mine))
     for p in mine:
         if now - p["opened_at"] < 90000:
             continue
-        szi = pos.get(p["src"], 0.0)
+        szi = pos.get(p.get("src") or p["coin"], 0.0)
         px = marks.get(p["coin"]) or p["entry"]
         held = (szi > 0 and p["side"] == "long") or (szi < 0 and p["side"] == "short")
-        if not held or abs(szi) * (marks.get(p["src"]) or px) < 20:
+        if not held or abs(szi) * (marks.get(p.get("src") or p["coin"]) or px) < 20:
             close_paper(st, p["key"], px, now, "whale")
-            log(st, now, f"همگام‌سازی: {w['tag']} دیگر {p['src']} {p['side']} ندارد؛ کپی مجازی بسته شد")
+            log(st, now, f"همگام‌سازی: {w['tag']} دیگر {p.get('src') or p['coin']} {p['side']} ندارد؛ کپی مجازی بسته شد")
 
 
 def is_spot(coin):
@@ -378,6 +382,43 @@ def fetch_orders(addr):
     return out[:40]
 
 
+def refresh_candles(cd, data, st, now):
+    """Candles for the coins on the feed + open paper positions, fetched here (server side) so the page never has to
+    reach Hyperliquid for them. A few coins per loop keeps API weight low."""
+    ser = cd.setdefault("series", {})
+    want = {}
+    for w in data["wallets"]:
+        for g in w["groups"]:
+            d = (g.get("dir") or "").lower()
+            if (d.startswith("open") or ">" in d) and g["usd"] >= 500:
+                want[g["coin"]] = max(want.get(g["coin"], 0), g["last"])
+    for p in st["open"].values():
+        want[p.get("src") or p["coin"]] = now
+    keep = sorted(want, key=lambda c: -want[c])[:CAND_COINS]
+    changed = False
+    for c in list(ser):
+        if c not in keep:
+            del ser[c]
+            changed = True
+    age = lambda c: min([ser.get(c, {}).get(tf, {}).get("at", 0) for tf in CAND_TFS])
+    due = [c for c in keep if now - age(c) > CAND_TTL]
+    due.sort(key=age)
+    t0 = time.time()
+    for c in due[:CAND_PER_RUN]:
+        if time.time() - t0 > 45:
+            break
+        for tf, ms in CAND_TFS.items():
+            try:
+                a = post({"type": "candleSnapshot", "req": {"coin": c, "interval": tf, "startTime": now - ms * CAND_N, "endTime": now}})
+                r = lambda v: float(f"{float(v):.7g}")
+                ser.setdefault(c, {})[tf] = {"at": now, "c": [[int(x["t"]), r(x["o"]), r(x["h"]), r(x["l"]), r(x["c"])] for x in a]}
+                changed = True
+            except Exception as e:
+                print("candles failed", c, tf, e, file=sys.stderr)
+            time.sleep(0.3)
+    return changed
+
+
 def make_groups(tag, addr, fills, now):
     """Same-coin, same-direction fills less than GAP apart become one 'move' (feed card)."""
     open_g, groups = {}, []
@@ -496,6 +537,18 @@ def main():
         os.makedirs(os.path.dirname(DATA_F), exist_ok=True)
         with open(DATA_F, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False)
+    try:
+        cw = load(CAND_WORK, None) or load(CAND_PUB, {"series": {}})
+        if refresh_candles(cw, data, st, now):
+            os.makedirs(os.path.dirname(CAND_WORK), exist_ok=True)
+            with open(CAND_WORK, "w", encoding="utf-8") as f:
+                json.dump(cw, f, separators=(",", ":"))
+        pub = load(CAND_PUB, {})
+        if cw.get("series") and now - pub.get("written", 0) > CAND_PUBLISH and cw.get("series") != pub.get("series"):
+            with open(CAND_PUB, "w", encoding="utf-8") as f:
+                json.dump({"written": now, "series": cw["series"]}, f, separators=(",", ":"))
+    except Exception as e:
+        print("candles step failed", e, file=sys.stderr)
     if st.pop("dirty", False) or now - st.get("data_ts", 0) > HEARTBEAT_S * 1000:
         st["data_ts"] = now
         with open(STATE_F, "w", encoding="utf-8") as f:

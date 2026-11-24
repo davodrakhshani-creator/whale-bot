@@ -490,12 +490,14 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
       h.appendChild(el("span", "coin", r.coin)); h.appendChild(el("span", "dir", r.lev + "x")); h.appendChild(el("span", "pill" + (r.kind === "دستی" ? " good" : ""), r.kind)); if (extra) h.appendChild(extra); return h;
     }
     function addrOf(r) { return r.addr || ""; }
+    function srcGroup(r) { var src = r.bot ? (r.bot.src || r.bot.coin) : null, w = W[r.addr]; if (!src || !w) return null; var best = null; w.groups.forEach(function (g) { if (g.coin === src && sideOf(g.dir) === r.side && isOpenDir(g.dir) && r.ts >= g.first - 60000 && r.ts <= g.last + 60000) best = g; }); return best; }
     var ol = $("p-open"); ol.textContent = "";
     if (!rowsO.length) ol.appendChild(el("p", "empty", "هنوز پوزیشنی باز نیست."));
     rowsO.forEach(function (r) {
       var c = el("article", "card"), r1 = el("div", "row"); r1.appendChild(link(r.tag, addrOf(r)));
       var wh = el("span", "when"); wh.appendChild(el("span", "num", clock(r.ts))); wh.appendChild(document.createTextNode(" · " + ago(r.ts))); r1.appendChild(wh); c.appendChild(r1);
       c.appendChild(head(r));
+      var sg = srcGroup(r); if (sg) { c.appendChild(el("p", "sub", "علت: نهنگ " + r.tag + " ساعت " + clock(sg.first) + " " + dirFa(sg.dir) + " (حجم " + usd(sg.usd) + ")")); var cb2 = el("button", "btn", "چارت نهنگ"); cb2.type = "button"; cb2.addEventListener("click", function () { openChart(sg); }); c.appendChild(cb2); }
       var st = el("div", "stats"); stat(st, "ورود", price(r.entry)); stat(st, "الان", r.mark ? price(r.mark) : "در راهه"); stat(st, "مارجین", money(r.margin));
       if (r.u != null) stat(st, "سود/زیان", sgn(r.u) + " (" + (r.u >= 0 ? "+" : "") + (100 * r.u / r.margin).toFixed(1) + "٪)", r.u >= 0 ? "up" : "down");
       c.appendChild(st);
@@ -567,12 +569,12 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     if (loadErr) { banner.hidden = false; txt.textContent = "تازه‌سازی صفحه خطا داد (" + loadErr + "). داده‌ی قبلی نشان داده می‌شه."; }
     else if (stale) { banner.hidden = false; txt.textContent = "ربات حدود " + ago(DATA.updated).replace(" پیش", "") + " است که چیزی ننوشته (معمولاً هر نیم ساعت حداقل یک‌بار می‌نویسه). احتمالاً اجرای GitHub متوقف شده؛ از تب Actions → whale-bot می‌شه دید و با Run workflow دوباره روشنش کرد."; }
     else banner.hidden = true;
-    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۱۳";
+    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۱۴";
   }
   function renderFeed(set, feedId, flt) {
     var all = [];
     set.forEach(function (w) { all = all.concat(W[w.addr].groups); });
-    all = all.filter(flt).sort(function (a, b) { return b.last - a.last; }).slice(0, 50);
+    all = all.filter(flt).sort(function (a, b) { return b.last - a.last; }).slice(0, 150);
     var feed = $(feedId); feed.textContent = "";
     var anyOk = set.some(function (w) { return W[w.addr].status === "ok"; });
     if (!all.length) { feed.appendChild(el("p", "empty", anyOk ? (feedId === "hw-feed" ? "در ۳ روز اخیر معامله‌ای از این چهار کیف‌پول نبوده. اینها کم‌معامله‌اند و صبر لازم داره." : "در این بازه حرکتی با این فیلتر نبوده. فیلتر رو شل‌تر کن.") : "در حال گرفتن داده...")); return; }
@@ -623,7 +625,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
         rec.appendChild(acts);
         if (aiOpen[g.id]) { rec.appendChild(el("p", "ai", autoText(g, d))); rec.appendChild(el("p", "sub", "این تحلیل قانون‌محور است و از همان آمار بالا ساخته می‌شود؛ هوش مصنوعی نیست و احتمال واقعی برد نیست.")); }
         c.appendChild(rec);
-      }
+      } else { var ca = el("div", "acts"), cb3 = el("button", "btn", "چارت"); cb3.type = "button"; cb3.addEventListener("click", function () { openChart(g); }); ca.appendChild(cb3); c.appendChild(ca); }
       feed.appendChild(c);
     });
   }
@@ -781,9 +783,23 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     });
     return { lines: L, found: found, open: open };
   }
-  function fetchCandles(coin, tf, from) {
+  var CND = null, CNDat = 0;
+  function firstOk(ps) { return new Promise(function (res) { var left = ps.length; ps.forEach(function (p) { p.then(function (v) { if (v) res(v); else if (!--left) res(null); }, function () { if (!--left) res(null); }); }); }); }
+  function loadCandleFile() {
+    if (CND && Date.now() - CNDat < 120000) return Promise.resolve(CND);
+    var bust = "?t=" + Math.floor(Date.now() / 60000);
+    return firstOk([getJson("candles.json" + bust).catch(function () { return null; }), getJson(RAW.replace("data.json", "candles.json") + bust).catch(function () { return null; })])
+      .then(function (f) { if (f && f.series) { CND = f; CNDat = Date.now(); } return CND; });
+  }
+  function bundled(coin, tf) {
+    return loadCandleFile().then(function (f) {
+      var s = f && f.series && f.series[coin] && f.series[coin][tf];
+      return s && s.c && s.c.length ? { cs: s.c.map(function (a) { return { t: a[0], o: a[1], h: a[2], l: a[3], c: a[4] }; }), at: s.at } : null;
+    }).catch(function () { return null; });
+  }
+  function fetchCandles(coin, tf, from, to) {
     var body = JSON.stringify({ type: "candleSnapshot", req: { coin: coin, interval: tf, startTime: Math.floor(from), endTime: Date.now() } });
-    return tfetch(HL, { method: "POST", headers: { "Content-Type": "application/json" }, body: body }, 12000)
+    return tfetch(HL, { method: "POST", headers: { "Content-Type": "application/json" }, body: body }, to || 10000)
       .then(function (r) { if (!r.ok) throw new Error("پاسخ سرور " + r.status); return r.json(); })
       .then(function (a) {
         if (!Array.isArray(a) || !a.length) throw new Error("Hyperliquid برای «" + coin + "» کندلی نداد");
@@ -874,17 +890,29 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
       var m = el("p", "ai", "چارت نیومد: " + msg); m.appendChild(document.createElement("br")); m.appendChild(rt); info.parentNode.insertBefore(m, info);
       rt.addEventListener("click", function () { m.remove(); cont.style.display = ""; load(); });
     }
+    function render(cs, note) {
+      if (gone) return; if (cs.length < 5) throw new Error("کندل کافی نبود");
+      var P = entryPattern(cs, g), idx = entryIndex(cs, g), keep = S.cs.length ? { from: S.from, to: S.to } : null;
+      S.cs = cs; S.e20 = P.e20; S.e50 = P.e50; S.mark = idx >= 0 && g.first - cs[idx].t < TFMS[cur] * 1.5 ? idx : -1; S.cross = null;
+      S.lines = lv.lines.concat(isOpenDir(g.dir) ? P.lines : []);
+      S.to = cs.length - 1; S.from = Math.max(0, Math.min(cs.length - 100, (idx >= 0 ? idx : cs.length) - 35)); if (S.to - S.from > 220) S.from = S.to - 220;
+      paint(S); info.textContent = note + " · بکش تا جابه‌جا شود، بزن تا قیمت‌ها را ببینی.";
+      if (isOpenDir(g.dir)) pat.textContent = P.short ? "برای تحلیل الگو کندل کافی قبل از ورود در این تایم‌فریم نبود؛ تایم‌فریم بزرگ‌تر را امتحان کن." : "وضع چارت لحظه‌ی ورود: " + P.list.join(" + ") + " · روند: " + P.trend + (P.rsi != null ? " · RSI " + P.rsi.toFixed(0) : "") + " (توصیف چارت است، نه دلیل واقعی نهنگ)";
+    }
+    var token = 0;
     function load() {
-      info.textContent = "در حال گرفتن کندل‌ها..."; pat.textContent = ""; var ms = TFMS[cur];
-      fetchCandles(g.coin, cur, Math.min(Date.now() - ms * 240, g.first - ms * 80)).then(function (cs) {
-        if (gone) return; if (cs.length < 5) throw new Error("کندل کافی نبود");
-        var P = entryPattern(cs, g), idx = entryIndex(cs, g);
-        S.cs = cs; S.e20 = P.e20; S.e50 = P.e50; S.mark = idx >= 0 && g.first - cs[idx].t < TFMS[cur] * 1.5 ? idx : -1; S.cross = null;
-        S.lines = lv.lines.concat(isOpenDir(g.dir) ? P.lines : []);
-        S.to = cs.length - 1; S.from = Math.max(0, Math.min(cs.length - 100, (idx >= 0 ? idx : cs.length) - 35)); if (S.to - S.from > 220) S.from = S.to - 220;
-        paint(S); info.textContent = "کندل‌ها از Hyperliquid (" + cur + ") · بکش تا جابه‌جا شود، بزن تا قیمت‌ها را ببینی.";
-        if (isOpenDir(g.dir)) pat.textContent = P.short ? "برای تحلیل الگو کندل کافی قبل از ورود در این تایم‌فریم نبود؛ تایم‌فریم بزرگ‌تر را امتحان کن." : "وضع چارت لحظه‌ی ورود: " + P.list.join(" + ") + " · روند: " + P.trend + (P.rsi != null ? " · RSI " + P.rsi.toFixed(0) : "") + " (توصیف چارت است، نه دلیل واقعی نهنگ)";
-      }).catch(function (e) { if (!gone) fail((e && e.message) || String(e)); });
+      var my = ++token, ms = TFMS[cur]; info.textContent = "در حال گرفتن کندل‌ها..."; pat.textContent = "";
+      var live = function (to) { return fetchCandles(g.coin, cur, Math.min(Date.now() - ms * 240, g.first - ms * 80), to); };
+      bundled(g.coin, cur).then(function (b) {
+        if (gone || my !== token) return;
+        if (b) {
+          var covers = b.cs[0].t <= g.first - ms * 30, mins = Math.max(0, Math.round((Date.now() - b.at) / 60000));
+          render(b.cs, "کندل‌های ذخیره‌شده‌ی ربات (" + cur + "، حدود " + mins + " دقیقه پیش)");
+          if (!covers) live(8000).then(function (cs) { if (!gone && my === token) render(cs, "کندل‌ها از Hyperliquid (" + cur + ")"); }).catch(function () {});
+          return;
+        }
+        return live(10000).then(function (cs) { if (gone || my !== token) return; render(cs, "کندل‌ها از Hyperliquid (" + cur + ")"); });
+      }).catch(function (e) { if (!gone && my === token) fail((e && e.message) || String(e)); });
     }
     load();
   }
