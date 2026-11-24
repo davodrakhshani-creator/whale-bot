@@ -41,7 +41,7 @@ def parse_dir(d):
     d = (d or "").strip().lower()
     if d.startswith("open"):
         return "open", ("long" if "long" in d else "short")
-    if d.startswith("close"):
+    if d.startswith("close") or d.startswith("liquidated") or d.startswith("auto-deleveraging"):
         return "close", ("long" if "long" in d else "short")
     return None, None
 
@@ -178,11 +178,15 @@ def process_wallet(st, cfg, w, fills, marks, now):
             if okey in st["open"]:
                 close_paper(st, okey, (marks.get("PAXG") or px) if is_gold(coin) else px, t, "whale")
             start = float(f.get("startPosition", 0) or 0)
-            rem = abs(start + (sz if f.get("side") == "B" else -sz))
+            after_f = start + (sz if f.get("side") == "B" else -sz)
+            rem = abs(after_f)
+            if (after_f > 0) != (b == "long"):
+                continue  # dir text says flip but the position did not actually cross zero: do nothing
             if rem * px > 0 and b in ("long", "short"):
-                pk = f"{addr}|{coin}|{b}"
-                p = {"usd": rem * px, "size": rem, "last": t}
-                st["pending"][pk] = p
+                if rem >= 0.3 * abs(start):  # whale really reversed (not just closed and left a crumb)
+                    st["pending"][f"{addr}|{coin}|{b}"] = {"usd": rem * px, "size": rem, "last": t}
+                else:
+                    log(st, t, f"{w['tag']} {coin} را بست و فقط بخش کوچکی ({rem * px:,.0f}$) در جهت مخالف ماند؛ شورت/لانگ جدید کپی نشد")
             continue
         kind, side = parse_dir(f.get("dir"))
         if not kind:
@@ -211,6 +215,36 @@ def process_wallet(st, cfg, w, fills, marks, now):
             del st["pending"][pk]
         elif now - p["last"] > PENDING_TTL:
             del st["pending"][pk]
+
+
+def whale_positions(addr, xyz):
+    """Whale's real current perp positions (public clearinghouseState, weight 2): {coin: signed size}."""
+    pos = {}
+    for dex in ([None, "xyz"] if xyz else [None]):
+        q = {"type": "clearinghouseState", "user": addr}
+        if dex:
+            q["dex"] = dex
+        for ap in post(q).get("assetPositions", []):
+            p = ap.get("position", {})
+            pos[p.get("coin", "")] = float(p.get("szi", 0) or 0)
+    return pos
+
+
+def reconcile(st, cfg, w, marks, now):
+    """Safety net: close a paper copy if the whale no longer holds that position (missed fill, liquidation, odd 'dir' text)."""
+    mine = [p for p in st["open"].values() if p["key"].startswith(w["addr"] + "|")]
+    if not mine:
+        return
+    pos = whale_positions(w["addr"], any(p["src"].startswith("xyz:") for p in mine))
+    for p in mine:
+        if now - p["opened_at"] < 90000:
+            continue
+        szi = pos.get(p["src"], 0.0)
+        px = marks.get(p["coin"]) or p["entry"]
+        held = (szi > 0 and p["side"] == "long") or (szi < 0 and p["side"] == "short")
+        if not held or abs(szi) * (marks.get(p["src"]) or px) < 20:
+            close_paper(st, p["key"], px, now, "whale")
+            log(st, now, f"همگام‌سازی: {w['tag']} دیگر {p['src']} {p['side']} ندارد؛ کپی مجازی بسته شد")
 
 
 def is_spot(coin):
@@ -424,6 +458,11 @@ def main():
             due = (last is None and w.get("copy", True)) or ow.get("feed_at") is None or now - ow.get("feed_at", 0) > FULL_EVERY
             if due and not fresh and last is not None and nfull >= FULL_PER_RUN:
                 due = False  # spread the heavy requests over several loops to stay under the API weight limit
+            if w.get("copy", True):
+                try:
+                    reconcile(st, cfg, w, marks, now)
+                except Exception as e:
+                    print("reconcile failed", w["tag"], e, file=sys.stderr)
             need_full = bool(fresh) or due
             nfull += 1 if need_full else 0
             if need_full:  # full fills + open orders: heavy, so only every few minutes or when something new happened

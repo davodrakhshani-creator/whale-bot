@@ -241,8 +241,8 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
   function num(x) { var n = Number(x); return isFinite(n) ? n : 0; }
   function clamp(x) { return Math.max(0, Math.min(1, x)); }
 
-  function sideOf(dir) { return /long/i.test(dir) ? "long" : /short/i.test(dir) ? "short" : null; }
-  function isOpenDir(d) { return /^open/i.test(d); }
+  function sideOf(dir) { var m = /(long|short)\s*$/i.exec(dir || ""); return m ? m[1].toLowerCase() : null; }
+  function isOpenDir(d) { return /^open|>/i.test(d); }
   function isCloseDir(d) { return /^close/i.test(d); }
   /* ---------- track record ---------- */
   function scoreOf(sm) {
@@ -308,6 +308,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
   function qty(n) { var a = Math.abs(n); return a >= 1e6 ? (a / 1e6).toFixed(2) + "M" : a >= 1e3 ? (a / 1e3).toFixed(1) + "K" : String(Number(a.toPrecision(4))); }
   function price(p) { return String(Number(p.toPrecision(5))); }
   function dirFa(d) {
+    if (/>/.test(d || "")) return "برعکس کرد: " + (/^long/i.test(d) ? "لانگ ← شورت" : "شورت ← لانگ");
     if (/^open long/i.test(d)) return "باز کردن لانگ"; if (/^open short/i.test(d)) return "باز کردن شورت";
     if (/^close long/i.test(d)) return "بستن لانگ"; if (/^close short/i.test(d)) return "بستن شورت"; return d || "—";
   }
@@ -391,6 +392,8 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
   function skipWhy(g) {
     var ev = (DATA.events || []).filter(function (e) { return e.text.indexOf(g.tag + " باز کرد " + g.coin) === 0 && Math.abs(e.t - g.last) < 3600000; })[0];
     if (ev) return /سقف|جا یا/.test(ev.text) ? "ربات کپی نکرد: سقف پوزیشن باز پر بود" : "ربات کپی نکرد: موجودی آزاد کافی نبود";
+    var cr = (DATA.events || []).filter(function (e) { return e.text.indexOf(g.tag + " " + g.coin + " را بست و فقط") === 0 && Math.abs(e.t - g.last) < 3600000; })[0];
+    if (cr) return "ربات کپی نکرد: نهنگ تقریباً فقط بست و خرده‌پوزیشن مخالف ماند";
     if (Date.now() - g.last < 15 * 60000) return "هنوز ثبت نشده؛ ربات هر ۵ تا ۱۵ دقیقه یک‌بار می‌خونه";
     return "ربات کپی نکرد (بعد از رفرش دوباره نگاه کن)";
   }
@@ -563,7 +566,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     if (loadErr) { banner.hidden = false; txt.textContent = "تازه‌سازی صفحه خطا داد (" + loadErr + "). داده‌ی قبلی نشان داده می‌شه."; }
     else if (stale) { banner.hidden = false; txt.textContent = "ربات حدود " + ago(DATA.updated).replace(" پیش", "") + " است که چیزی ننوشته (معمولاً هر نیم ساعت حداقل یک‌بار می‌نویسه). احتمالاً اجرای GitHub متوقف شده؛ از تب Actions → whale-bot می‌شه دید و با Run workflow دوباره روشنش کرد."; }
     else banner.hidden = true;
-    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated);
+    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۱۲";
   }
   function renderFeed(set, feedId, flt) {
     var all = [];
@@ -763,7 +766,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
   function ema(a, n) { var k = 2 / (n + 1), o = [], p = 0; a.forEach(function (v, i) { p = i ? v * k + p * (1 - k) : v; o.push(p); }); return o; }
   function rsiAt(c, i, n) { if (i < n) return null; var g = 0, l = 0, j; for (j = i - n + 1; j <= i; j++) { var d = c[j] - c[j - 1]; if (d > 0) g += d; else l -= d; } return l === 0 ? 100 : 100 - 100 / (1 + g / l); }
   function durTxt(ms) { var h = ms / 3600000; return h < 1 ? Math.round(h * 60) + " دقیقه" : h < 48 ? h.toFixed(1) + " ساعت" : (h / 24).toFixed(1) + " روز"; }
-  function tfFor(d) { var ms = d && d.sum ? d.sum.avgDurationMs : 0; if (!ms) return { tf: "15m", why: "" }; var tf = ms < 2 * 3600000 ? "5m" : ms < 12 * 3600000 ? "15m" : ms < 72 * 3600000 ? "1h" : "4h"; return { tf: tf, why: "میانگین نگه‌داری پوزیشن این نهنگ " + durTxt(ms) + " است؛ پس تایم‌فریم " + tf + " به رفتارش نزدیک‌تر است." }; }
+  function tfFor(d) { var ms = d && d.sum ? d.sum.avgDurationMs : 0; if (!ms) return { tf: "15m", why: "سابقه‌ی کافی از این نهنگ هنوز ساخته نشده؛ تایم‌فریم پیش‌فرض ۱۵ دقیقه است." }; var tf = ms < 2 * 3600000 ? "5m" : ms < 12 * 3600000 ? "15m" : ms < 72 * 3600000 ? "1h" : "4h"; return { tf: tf, why: "میانگین نگه‌داری پوزیشن این نهنگ " + durTxt(ms) + " است؛ پس تایم‌فریم " + tf + " به رفتارش نزدیک‌تر است." }; }
   /* what the chart looked like at the whale's entry (objective context, not the whale's intent) */
   function entryPattern(cs, g) {
     var side = sideOf(g.dir), avg = g.usd / g.size, idx = -1, i;
