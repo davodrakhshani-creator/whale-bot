@@ -3,7 +3,7 @@ name: whale-bot
 # the schedule/dispatch/push triggers only restart it (a new run replaces the old one; state is committed each loop).
 on:
   schedule:
-    - cron: "7 */5 * * *"
+    - cron: "7 */4 * * *"
   workflow_dispatch:
   push:
     paths: ["bot.py", "config.json", ".github/workflows/run.yml"]

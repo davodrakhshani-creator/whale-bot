@@ -11,6 +11,7 @@ CFG_F = os.path.join(ROOT, "config.json")
 SLIP, FEE = 0.0003, 0.00045
 PENDING_TTL = 30 * 60 * 1000
 HEARTBEAT_S = 3600
+DATA_HEARTBEAT_S = 1800
 HIST_F = os.path.join(ROOT, "history.json")
 HIST_DAYS = 90
 HIST_TTL = 6 * 3600 * 1000      # refresh a wallet's 90-day record every 6h
@@ -299,7 +300,7 @@ def refresh_history(hist, cfg, now):
     changed = False
     t0 = time.time()
     for w in due[:HIST_PER_RUN]:
-        if time.time() - t0 > 420:  # time budget; the rest continues next run
+        if time.time() - t0 > 150:  # time budget; the rest continues next run
             break
         try:
             res = analyze(fetch_history(w["addr"], now)) or {"empty": True}
@@ -393,8 +394,11 @@ def main():
         with open(HIST_F, "w", encoding="utf-8") as f:
             json.dump(hist, f, ensure_ascii=False)
     data = build_data(st, cfg, marks, now, hist, feeds, prev)
-    core = lambda d: json.dumps({k: v for k, v in (d or {}).items() if k not in ("updated", "marks")}, sort_keys=True, ensure_ascii=False)
-    if core(data) != core(prev) or now - (prev or {}).get("updated", 0) > HEARTBEAT_S * 1000:
+    def core(d):
+        d = {k: v for k, v in (d or {}).items() if k not in ("updated", "marks")}
+        d["wallets"] = [{k: v for k, v in w.items() if k != "at"} for w in d.get("wallets", [])]
+        return json.dumps(d, sort_keys=True, ensure_ascii=False)
+    if core(data) != core(prev) or now - (prev or {}).get("updated", 0) > DATA_HEARTBEAT_S * 1000:
         os.makedirs(os.path.dirname(DATA_F), exist_ok=True)
         with open(DATA_F, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False)

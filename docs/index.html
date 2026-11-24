@@ -224,6 +224,8 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
   var START = 1000, GOAL = 1500, DATA = null, W = {}, SETS = { whale: [], hw: [], gold: [], scalp: [] }, WALLETS = [];
   var seen = {}, newAt = {}, aiOpen = {}, marks = {}, firstLoad = true, loadErr = null;
   var minUsd = 500, winH = 24, onlyOpen = false, touching = false, pending = false;
+  var BC = {}; try { BC = JSON.parse(localStorage.getItem("whale-gh-botclose") || "{}") || {}; } catch (e) { BC = {}; }
+  function saveBC() { try { localStorage.setItem("whale-gh-botclose", JSON.stringify(BC)); } catch (e) {} }
   var M = { open: [], closed: [], seq: 1 }, MSG = {}, live = false;
   try { var mv = JSON.parse(localStorage.getItem("whale-gh-manual") || "null"); if (mv && mv.open && mv.closed) M = mv; } catch (e) {}
   function saveM() { try { localStorage.setItem("whale-gh-manual", JSON.stringify(M)); } catch (e) {} }
@@ -344,9 +346,17 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     n.className = "chip " + (off ? "err" : "ok");
     tx.textContent = off ? "کانکت نیست" : "متصل" + (lastOk ? " · " + ago(lastOk) : "");
   }
+  var RAW = "https://raw.githubusercontent.com/davodrakhshani-creator/whale-bot/main/docs/data.json";
+  function getJson(url) { return tfetch(url, { cache: "no-store" }, 10000).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }); }
   function load() {
-    return tfetch("data.json?t=" + Date.now(), { cache: "no-store" }, 10000).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
-      .then(function (d) { ingest(d); loadErr = null; lastOk = Date.now(); renderAll(); })
+    var bust = "?t=" + Math.floor(Date.now() / 60000);
+    return Promise.all([getJson(RAW + bust).catch(function () { return null; }), getJson("data.json" + bust).catch(function (e) { return e; })])
+      .then(function (rs) {
+        var ok = rs.filter(function (x) { return x && !(x instanceof Error) && x.wallets; });
+        if (!ok.length) throw (rs[1] instanceof Error ? rs[1] : new Error("no data"));
+        ok.sort(function (a, b) { return (b.updated || 0) - (a.updated || 0); });
+        ingest(ok[0]); loadErr = null; lastOk = Date.now(); renderAll();
+      })
       .catch(function (e) { loadErr = navigator.onLine === false ? "offline" : String((e && e.message) || e); renderAll(); })
       .then(updateNet);
   }
@@ -388,6 +398,13 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     saveM(); renderAll();
   }
   function alert_(g, text) { var b = $("banner"); b.hidden = false; $("banner-text").textContent = text; setTimeout(function () { renderAll(); }, 4000); }
+  function botId(p) { return p.key + "|" + p.opened_at; }
+  function closeBot(p, px) {
+    var n = p.margin * p.lev, d = p.side === "long" ? 1 : -1, SL = 0.0003, ex = p.side === "long" ? px * (1 - SL) : px * (1 + SL);
+    var pnl = Math.max(-p.margin, n * d * (ex - p.entry) / p.entry - n * 0.00045 * 2);
+    BC[botId(p)] = { coin: p.coin, side: p.side, lev: p.lev, entry: p.entry, exit: ex, pnl: pnl, margin: p.margin, tag: p.tag, addr: (p.key || "").split("|")[0], at: Date.now() };
+    saveBC(); renderAll();
+  }
   function closeManual(p, px) {
     var n = p.margin * p.lev, d = p.side === "long" ? 1 : -1, SL = 0.0003, ex = p.side === "long" ? px * (1 - SL) : px * (1 + SL);
     var pnl = Math.max(-p.margin, n * d * (ex - p.entry) / p.entry - n * 0.00045 * 2);
@@ -443,12 +460,15 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
   function renderLedger() {
     renderPaper();
     var rowsO = [], rowsC = [], manU = 0, manR = 0;
-    (DATA.open || []).forEach(function (p) { rowsO.push({ coin: p.coin, side: p.side, lev: p.lev, entry: p.entry, mark: p.mark, u: p.upnl, margin: p.margin, tag: p.tag, addr: (p.key || "").split("|")[0], ts: p.opened_at, kind: "ربات" }); });
+    var botAdj = 0, botClosedById = {};
+    (DATA.closed || []).forEach(function (t) { botClosedById[botId(t)] = t; });
+    (DATA.open || []).forEach(function (p) { if (BC[botId(p)]) { botAdj += BC[botId(p)].pnl - (p.upnl || 0); return; } rowsO.push({ bot: p, coin: p.coin, side: p.side, lev: p.lev, entry: p.entry, mark: p.mark, u: p.upnl, margin: p.margin, tag: p.tag, addr: (p.key || "").split("|")[0], ts: p.opened_at, kind: "ربات" }); });
     M.open.forEach(function (p) { var mk = marks[p.coin], u = mk ? calcU(p, mk.px) : null; if (u != null) manU += u; rowsO.push({ coin: p.coin, side: p.side, lev: p.lev, entry: p.entry, mark: mk ? mk.px : null, u: u, margin: p.margin, tag: p.tag, addr: p.addr, ts: p.openedAt, kind: "دستی", man: p }); });
-    (DATA.closed || []).forEach(function (t) { rowsC.push({ coin: t.coin, side: t.side, lev: t.lev, entry: t.entry, exit: t.exit, pnl: t.pnl, margin: t.margin, tag: t.tag, addr: (t.key || "").split("|")[0], ts: t.closed_at, kind: "ربات", why: t.reason === "whale" ? "نهنگ بست" : t.reason === "liq" ? "تصفیه" : "دستی" }); });
+    Object.keys(BC).forEach(function (k) { var c = BC[k]; if (botClosedById[k]) botAdj += c.pnl - botClosedById[k].pnl; rowsC.push({ coin: c.coin, side: c.side, lev: c.lev, entry: c.entry, exit: c.exit, pnl: c.pnl, margin: c.margin, tag: c.tag, addr: c.addr, ts: c.at, kind: "ربات", why: "بستی" }); });
+    (DATA.closed || []).forEach(function (t) { if (BC[botId(t)]) return; rowsC.push({ coin: t.coin, side: t.side, lev: t.lev, entry: t.entry, exit: t.exit, pnl: t.pnl, margin: t.margin, tag: t.tag, addr: (t.key || "").split("|")[0], ts: t.closed_at, kind: "ربات", why: t.reason === "whale" ? "نهنگ بست" : t.reason === "liq" ? "تصفیه" : "دستی" }); });
     M.closed.forEach(function (t) { manR += t.pnl; rowsC.push({ coin: t.coin, side: t.side, lev: t.lev, entry: t.entry, exit: t.exit, pnl: t.pnl, margin: t.margin, tag: t.tag, addr: t.addr, ts: t.closedAt, kind: "دستی", why: "بستی" }); });
     rowsO.sort(function (a, b) { return b.ts - a.ts; }); rowsC.sort(function (a, b) { return b.ts - a.ts; });
-    var eq = DATA.equity + manR + manU, pct = clamp((eq - START) / (GOAL - START)) * 100, tot = eq - START;
+    var eq = DATA.equity + manR + manU + botAdj, pct = clamp((eq - START) / (GOAL - START)) * 100, tot = eq - START;
     $("p-eq").textContent = money(eq); $("p-bar").style.width = pct.toFixed(1) + "%"; $("p-pct").textContent = pct.toFixed(0) + "٪ از مسیر هدف";
     var ps = $("p-stats"); ps.textContent = "";
     var wins = rowsC.filter(function (t) { return t.pnl > 0; }).length;
@@ -470,10 +490,10 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
       var st = el("div", "stats"); stat(st, "ورود", price(r.entry)); stat(st, "الان", r.mark ? price(r.mark) : "در راهه"); stat(st, "مارجین", money(r.margin));
       if (r.u != null) stat(st, "سود/زیان", sgn(r.u) + " (" + (r.u >= 0 ? "+" : "") + (100 * r.u / r.margin).toFixed(1) + "٪)", r.u >= 0 ? "up" : "down");
       c.appendChild(st);
-      if (r.man) {
+      if (r.man || r.bot) {
         var acts = el("div", "acts"), b1 = el("button", "btn primary", "بستن با قیمت فعلی"); b1.type = "button"; b1.disabled = r.mark == null;
-        b1.addEventListener("click", function () { closeManual(r.man, marks[r.man.coin].px); }); acts.appendChild(b1);
-        var wc = whaleClosedAfter(r.man);
+        b1.addEventListener("click", function () { var px = marks[r.coin] && marks[r.coin].px; if (!px) return; if (r.man) closeManual(r.man, px); else closeBot(r.bot, px); }); acts.appendChild(b1);
+        var wc = r.man ? whaleClosedAfter(r.man) : null;
         if (wc) { var b2 = el("button", "btn", "بستن با قیمت نهنگ"); b2.type = "button"; b2.addEventListener("click", function () { closeManual(r.man, wc.px); }); acts.appendChild(b2); c.appendChild(el("span", "pill bad", "نهنگ با قیمت " + price(wc.px) + " بست")); }
         c.appendChild(acts);
       }
@@ -532,11 +552,11 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     if (!DATA) { banner.hidden = !loadErr; txt.textContent = loadErr ? "داده‌ی ربات نیومد (" + loadErr + "). چند دقیقه بعد دوباره باز کن." : ""; return; }
     SETS.whale.forEach(function (w) {
       var s = W[w.addr], c = el("span", "chip " + (s.status === "ok" ? "ok" : "err")); c.appendChild(el("i")); c.appendChild(el("span", null, w.tag));
-      c.appendChild(el("span", "sub", s.status === "ok" ? ago(s.at) : "خطا")); strip.appendChild(c);
+      if (s.status !== "ok") c.appendChild(el("span", "sub", "خطا")); strip.appendChild(c);
     });
-    var stale = Date.now() - DATA.updated > 100 * 60000;
+    var stale = Date.now() - DATA.updated > 75 * 60000;
     if (loadErr) { banner.hidden = false; txt.textContent = "تازه‌سازی صفحه خطا داد (" + loadErr + "). داده‌ی قبلی نشان داده می‌شه."; }
-    else if (stale) { banner.hidden = false; txt.textContent = "ربات حدود " + ago(DATA.updated).replace(" پیش", "") + " است که چیزی ننوشته. GitHub گاهی اجرا را عقب می‌اندازد؛ از تب Actions می‌شه وضعیتش را دید."; }
+    else if (stale) { banner.hidden = false; txt.textContent = "ربات حدود " + ago(DATA.updated).replace(" پیش", "") + " است که چیزی ننوشته (معمولاً هر نیم ساعت حداقل یک‌بار می‌نویسه). احتمالاً اجرای GitHub متوقف شده؛ از تب Actions → whale-bot می‌شه دید و با Run workflow دوباره روشنش کرد."; }
     else banner.hidden = true;
     $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated);
   }
