@@ -1,5 +1,5 @@
 {
- "balance": 1068.9527100795256,
+ "balance": 1072.3918806265303,
  "open": {
   "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|PUMP|short": {
    "key": "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|PUMP|short",
@@ -304,19 +304,19 @@
    "opened_at": 1795629888205,
    "whale_usd": 26669.0671
   },
-  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|HYPE|long": {
-   "key": "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|HYPE|long",
+  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|HYPE|short": {
+   "key": "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|HYPE|short",
    "tag": "c191",
    "group": "طلا",
    "coin": "HYPE",
    "src": "HYPE",
-   "side": "long",
-   "entry": 60.4151191,
-   "whale_px": 60.428479896449986,
+   "side": "short",
+   "entry": 61.33809305,
+   "whale_px": 61.319,
    "margin": 50,
    "lev": 5,
-   "opened_at": 1795631134745,
-   "whale_usd": 33380.08801000001
+   "opened_at": 1795634417548,
+   "whale_usd": 3439.9959
   }
  },
  "closed": [
@@ -1106,14 +1106,27 @@
    "pnl": 5.24056408806761,
    "closed_at": 1795630635552,
    "reason": "whale"
+  },
+  {
+   "key": "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|HYPE|long",
+   "tag": "c191",
+   "group": "طلا",
+   "coin": "HYPE",
+   "src": "HYPE",
+   "side": "long",
+   "entry": 60.4151191,
+   "whale_px": 60.428479896449986,
+   "margin": 50,
+   "lev": 5,
+   "opened_at": 1795631134745,
+   "whale_usd": 33380.08801000001,
+   "exit": 61.3006043,
+   "pnl": 3.4391705470047027,
+   "closed_at": 1795634417548,
+   "reason": "whale"
   }
  ],
  "pending": {
-  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|TRUMP|long": {
-   "usd": 502.0452479999999,
-   "size": 595.1999999999999,
-   "last": 1795632646201
-  },
   "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|xyz:SOXL|long": {
    "usd": 596.12906,
    "size": 19.13,
@@ -1136,17 +1149,9 @@
   "0x7256bdc5b2dce2600f79b1fd1469e80357936e98": 1795413632500,
   "0xbd8a4f1170abd4fcb3422d60ea1d005eb2bddcf1": 1795514744136,
   "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9": 1795634197425,
-  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37": 1795634324877
+  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37": 1795634417548
  },
  "events": [
-  {
-   "t": 1795573670465,
-   "text": "c191 باز کرد xyz:STRC long (~$3,437) ولی سقف 15 پوزیشن باز پر بود"
-  },
-  {
-   "t": 1795573836192,
-   "text": "9aa5 باز کرد xyz:SILVER short (~$9,497) ولی سقف 15 پوزیشن باز پر بود"
-  },
   {
    "t": 1795573850141,
    "text": "c191 باز کرد xyz:TSM long (~$2,230) ولی سقف 15 پوزیشن باز پر بود"
@@ -1938,8 +1943,16 @@
   {
    "t": 1795633955607,
    "text": "c191 باز کرد xyz:GOLD short (~$47,609) ولی مارجین آزاد کافی نبود (آزاد 25$، لازم 100$)"
+  },
+  {
+   "t": 1795634417548,
+   "text": "کپی مجازی بسته شد (نهنگ بست): c191 HYPE لانگ سود/زیان +3.44$"
+  },
+  {
+   "t": 1795634417548,
+   "text": "کپی مجازی باز شد: c191 HYPE شورت ورود 61.3381 (حجم نهنگ ~$3,440)"
   }
  ],
- "data_ts": 1795634366016,
+ "data_ts": 1795634459938,
  "started": 1795416439329
 }
