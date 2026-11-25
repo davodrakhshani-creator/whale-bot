@@ -1,5 +1,5 @@
 {
- "balance": 1038.0211732940788,
+ "balance": 1048.5654065194403,
  "open": {
   "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|PUMP|short": {
    "key": "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|PUMP|short",
@@ -121,20 +121,6 @@
    "lev": 5,
    "opened_at": 1795576554047,
    "whale_usd": 4113.846600000001
-  },
-  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|GRAM|long": {
-   "key": "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|GRAM|long",
-   "tag": "c191",
-   "group": "طلا",
-   "coin": "GRAM",
-   "src": "GRAM",
-   "side": "long",
-   "entry": 0.925157464,
-   "whale_px": 0.9257520303151178,
-   "margin": 50,
-   "lev": 5,
-   "opened_at": 1795591443222,
-   "whale_usd": 4641.72068
   },
   "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|SOL|long": {
    "key": "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|SOL|long",
@@ -317,6 +303,21 @@
    "lev": 5,
    "opened_at": 1795644630334,
    "whale_usd": 251076.5054,
+   "ai": null
+  },
+  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|GRAM|short": {
+   "key": "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|GRAM|short",
+   "tag": "c191",
+   "group": "طلا",
+   "coin": "GRAM",
+   "src": "GRAM",
+   "side": "short",
+   "entry": 0.9675696420000001,
+   "whale_px": 0.9668647122219676,
+   "margin": 50,
+   "lev": 5,
+   "opened_at": 1795646824554,
+   "whale_usd": 12649.491030000001,
    "ai": null
   }
  },
@@ -1197,6 +1198,24 @@
    "pnl": -42.0342648286847,
    "closed_at": 1795641133627,
    "reason": "stop"
+  },
+  {
+   "key": "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|GRAM|long",
+   "tag": "c191",
+   "group": "طلا",
+   "coin": "GRAM",
+   "src": "GRAM",
+   "side": "long",
+   "entry": 0.925157464,
+   "whale_px": 0.9257520303151178,
+   "margin": 50,
+   "lev": 5,
+   "opened_at": 1795591443222,
+   "whale_usd": 4641.72068,
+   "exit": 0.9650104100000001,
+   "pnl": 10.544233225361545,
+   "closed_at": 1795646824554,
+   "reason": "whale"
   }
  ],
  "pending": {},
@@ -1211,17 +1230,9 @@
   "0x7256bdc5b2dce2600f79b1fd1469e80357936e98": 1795413632500,
   "0xbd8a4f1170abd4fcb3422d60ea1d005eb2bddcf1": 1795514744136,
   "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9": 1795646648778,
-  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37": 1795646599125
+  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37": 1795646824554
  },
  "events": [
-  {
-   "t": 1795575881101,
-   "text": "9aa5 باز کرد xyz:AAPL long (~$6,783) ولی سقف 15 پوزیشن باز پر بود"
-  },
-  {
-   "t": 1795575964357,
-   "text": "9aa5 باز کرد xyz:AAPL long (~$2,451) ولی سقف 15 پوزیشن باز پر بود"
-  },
   {
    "t": 1795576074273,
    "text": "9aa5 باز کرد xyz:AAPL long (~$2,284) ولی سقف 15 پوزیشن باز پر بود"
@@ -2013,9 +2024,17 @@
   {
    "t": 1795645953197,
    "text": "c191 باز کرد PUMP short (~$5,709) ولی مارجین آزاد کافی نبود (آزاد 14$، لازم 50$)"
+  },
+  {
+   "t": 1795646824554,
+   "text": "کپی مجازی بسته شد (نهنگ بست): c191 GRAM لانگ سود/زیان +10.54$"
+  },
+  {
+   "t": 1795646824554,
+   "text": "کپی مجازی باز شد: c191 GRAM شورت ورود 0.96757 (حجم نهنگ ~$12,649)"
   }
  ],
- "data_ts": 1795646657443,
+ "data_ts": 1795646858704,
  "started": 1795416439329,
  "stopped": {
   "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|PURR|short": 1795641133627
