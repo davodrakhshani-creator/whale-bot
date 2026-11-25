@@ -106,7 +106,11 @@
     "min_usd": 2000,
     "stop_pct": 0.3,
     "gold_stop_price": 0.03,
-    "risk_max": 0.4,
-    "wallet_cap": 0.3
+    "ai": {
+      "enabled": true,
+      "provider": "auto",
+      "model": "claude-sonnet-5-5",
+      "daily_cap": 150
+    }
   }
 }

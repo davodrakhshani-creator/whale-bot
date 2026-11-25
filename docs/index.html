@@ -220,6 +220,8 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     <div class="list" id="p-open"></div>
     <h2>تاریخچه</h2>
     <div class="list" id="p-closed"></div>
+    <h2>تحلیل هوش مصنوعی قبل از کپی</h2>
+    <div class="list" id="p-ai"></div>
     <h2>رویدادهای ربات</h2>
     <div class="list" id="p-events"></div>
     <p class="sub">این دفتر روی GitHub ذخیره می‌شه، پس با بستن صفحه یا برنامه صفر نمی‌شه. پول و سفارش واقعی در کار نیست.</p>
@@ -575,7 +577,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     if (loadErr) { banner.hidden = false; txt.textContent = "تازه‌سازی صفحه خطا داد (" + loadErr + "). داده‌ی قبلی نشان داده می‌شه."; }
     else if (stale) { banner.hidden = false; txt.textContent = "ربات حدود " + ago(DATA.updated).replace(" پیش", "") + " است که چیزی ننوشته (معمولاً هر نیم ساعت حداقل یک‌بار می‌نویسه). احتمالاً اجرای GitHub متوقف شده؛ از تب Actions → whale-bot می‌شه دید و با Run workflow دوباره روشنش کرد."; }
     else banner.hidden = true;
-    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۱۷";
+    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۱۸";
   }
   function renderFeed(set, feedId, flt) {
     var all = [];
@@ -706,6 +708,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     var ev = $("p-events"); ev.textContent = "";
     (DATA.events || []).slice(0, 15).forEach(function (e) { var r = el("p", "sub"); r.appendChild(el("span", "num", clock(e.t) + " ")); r.appendChild(document.createTextNode(e.text)); ev.appendChild(r); });
     if (!(DATA.events || []).length) ev.appendChild(el("p", "empty", "هنوز رویدادی نبوده."));
+    var ai = $("p-ai"); if (ai) { ai.textContent = ""; (DATA.ai_log || []).slice(0, 12).forEach(function (a) { var c = el("div", "card"); var ok = a.decision === "enter"; c.appendChild(el("p", "", (ok ? "✅ ورود " : "⛔ رد ") + a.tag + " " + a.coin + " " + (a.side === "long" ? "لانگ" : "شورت") + " · احتمال برد " + Math.round(a.win_prob) + "٪ · " + clock(a.t))); c.appendChild(el("p", "sub", a.summary)); (a.reasons || []).forEach(function (x) { c.appendChild(el("p", "sub", "• " + x)); }); (a.red_flags || []).forEach(function (x) { c.appendChild(el("p", "sub", "⚠️ " + x)); }); ai.appendChild(c); }); if (!(DATA.ai_log || []).length) ai.appendChild(el("p", "empty", "هنوز تحلیلی ثبت نشده (کلید AI اضافه شده؟)")); }
   }
 
   /* ---------- controls ---------- */

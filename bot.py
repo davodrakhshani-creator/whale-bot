@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Whale paper-copy bot. Reads PUBLIC Hyperliquid data only. No keys, no real orders.
 Run every few minutes (GitHub Actions). State lives in state.json, view data in docs/data.json."""
+import ai
 import json, os, sys, time, urllib.request
 
 API = "https://api.hyperliquid.xyz/info"
@@ -157,22 +158,40 @@ def open_paper(st, cfg, w, coin, side, avg_px, usd, now, marks):
     if is_gold(coin):
         inst, margin, lev = "PAXG", S.get("gold_margin", 100), 1
     rk = risk_of(w["addr"], coin, side)
-    if rk is not None and rk >= S.get("risk_max", 0.40):
-        log_once(st, now, f"{w['tag']} باز کرد {coin} {'لانگ' if side == 'long' else 'شورت'} (~${usd:,.0f}) ولی احتمال تاریخی باخت {rk:.0%} از حد {S.get('risk_max', 0.40):.0%} بالاتر بود؛ کپی نشد")
+    if S.get("risk_max") and rk is not None and rk >= S["risk_max"]:
+        log_once(st, now, f"{w['tag']} باز کرد {coin} {'لانگ' if side == 'long' else 'شورت'} (~${usd:,.0f}) ولی احتمال تاریخی باخت {rk:.0%} از حد {S['risk_max']:.0%} بالاتر بود؛ کپی نشد")
         return
     eq = st["balance"] + sum(unreal(p, marks.get(p["coin"], p["entry"])) for p in st["open"].values())
     used_w = sum(p["margin"] for p in st["open"].values() if p["key"].startswith(w["addr"] + "|"))
-    if used_w + margin > S.get("wallet_cap", 0.30) * eq:
-        log_once(st, now, f"{w['tag']} باز کرد {coin} {side} (~${usd:,.0f}) ولی سقف {S.get('wallet_cap', 0.30):.0%} مارجین برای هر نهنگ پر بود (الان {used_w:,.0f}$ از {eq:,.0f}$)")
+    if S.get("wallet_cap") and used_w + margin > S["wallet_cap"] * eq:
+        log_once(st, now, f"{w['tag']} باز کرد {coin} {side} (~${usd:,.0f}) ولی سقف {S['wallet_cap']:.0%} مارجین برای هر نهنگ پر بود (الان {used_w:,.0f}$ از {eq:,.0f}$)")
         return
     avail = free_margin(st, marks)
     if avail < margin:
         log(st, now, f"{w['tag']} باز کرد {coin} {side} (~${usd:,.0f}) ولی مارجین آزاد کافی نبود (آزاد {avail:,.0f}$، لازم {margin:,.0f}$)")
         return
+    verdict = None
+    try:
+        verdict = ai.analyze(post, st, cfg, RISK_HIST.get(w["addr"]), marks, unreal, w, coin, side, avg_px, usd, now)
+    except Exception as e:
+        print("ai error", e, file=sys.stderr)
+    sd = "لانگ" if side == "long" else "شورت"
+    if verdict and verdict.get("unavailable"):
+        log_once(st, now, f"تحلیل هوش مصنوعی در دسترس نبود ({verdict['unavailable']}) ← بدون AI کپی شد: {w['tag']} {coin} {sd}")
+        verdict = None
+    if verdict:
+        rec = {"t": now, "tag": w["tag"], "coin": coin, "side": side, "decision": verdict["decision"], "win_prob": verdict["win_prob"],
+               "summary": verdict["summary"], "reasons": verdict["reasons"], "red_flags": verdict["red_flags"], "regime": verdict["regime"], "model": verdict.get("model")}
+        st["ai_log"] = (st.get("ai_log", []) + [rec])[-60:]
+        if verdict["decision"] == "skip":
+            log(st, now, f"هوش مصنوعی رد کرد: {w['tag']} {coin} {sd} (~${usd:,.0f}) — {verdict['summary']}")
+            return
+        log(st, now, f"هوش مصنوعی تأیید کرد ({verdict['win_prob']:.0f}٪): {w['tag']} {coin} {sd} — {verdict['summary']}")
     base = marks.get(inst) or avg_px
     entry = base * (1 + SLIP) if side == "long" else base * (1 - SLIP)
     st["open"][key] = {"key": key, "tag": w["tag"], "group": w.get("group", ""), "coin": inst, "src": coin, "side": side, "entry": entry,
-                       "whale_px": avg_px, "margin": margin, "lev": lev, "opened_at": now, "whale_usd": usd}
+                       "whale_px": avg_px, "margin": margin, "lev": lev, "opened_at": now, "whale_usd": usd,
+                       "ai": ({"p": verdict["win_prob"], "s": verdict["summary"], "r": verdict["reasons"], "f": verdict["red_flags"]} if verdict else None)}
     log(st, now, f"کپی مجازی باز شد: {w['tag']} {inst} {'لانگ' if side == 'long' else 'شورت'} ورود {entry:.6g} (حجم نهنگ ~${usd:,.0f})")
 
 
@@ -514,7 +533,7 @@ def build_data(st, cfg, marks, now, hist, feeds, prev, ords, fat):
         wallets.append(entry)
     return {"updated": now, "started": st.get("started", now), "settings": cfg["settings"], "start": cfg["settings"]["start_balance"],
             "balance": st["balance"], "equity": st["balance"] + upl, "open": opens, "closed": st["closed"][-60:][::-1],
-            "events": st["events"][-60:][::-1], "marks": {c: marks[c] for c in need if c in marks}, "wallets": wallets}
+            "events": st["events"][-60:][::-1], "ai_log": (st.get("ai_log") or [])[::-1][:30], "marks": {c: marks[c] for c in need if c in marks}, "wallets": wallets}
 
 
 def main():
