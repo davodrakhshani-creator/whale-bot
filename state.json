@@ -1,5 +1,5 @@
 {
- "balance": 1068.1020240248397,
+ "balance": 1070.2159131814587,
  "open": {
   "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|PUMP|short": {
    "key": "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|PUMP|short",
@@ -177,20 +177,6 @@
    "opened_at": 1795558192104,
    "whale_usd": 2412.4064
   },
-  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|xyz:NVDA|short": {
-   "key": "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|xyz:NVDA|short",
-   "tag": "c191",
-   "group": "طلا",
-   "coin": "xyz:NVDA",
-   "src": "xyz:NVDA",
-   "side": "short",
-   "entry": 154.22871750000002,
-   "whale_px": 154.30548969540644,
-   "margin": 50,
-   "lev": 5,
-   "opened_at": 1795560783469,
-   "whale_usd": 17827.06753
-  },
   "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9|xyz:SKHX|short": {
    "key": "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9|xyz:SKHX|short",
    "tag": "a70a",
@@ -204,6 +190,20 @@
    "lev": 5,
    "opened_at": 1795561081600,
    "whale_usd": 12224.02122
+  },
+  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|HYPE|long": {
+   "key": "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|HYPE|long",
+   "tag": "c191",
+   "group": "طلا",
+   "coin": "HYPE",
+   "src": "HYPE",
+   "side": "long",
+   "entry": 59.58637055,
+   "whale_px": 59.53257124352331,
+   "margin": 50,
+   "lev": 5,
+   "opened_at": 1795565144047,
+   "whale_usd": 32171.4015
   }
  },
  "closed": [
@@ -418,6 +418,24 @@
    "pnl": 10.333670148967503,
    "closed_at": 1795558195310,
    "reason": "whale"
+  },
+  {
+   "key": "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|xyz:NVDA|short",
+   "tag": "c191",
+   "group": "طلا",
+   "coin": "xyz:NVDA",
+   "src": "xyz:NVDA",
+   "side": "short",
+   "entry": 154.22871750000002,
+   "whale_px": 154.30548969540644,
+   "margin": 50,
+   "lev": 5,
+   "opened_at": 1795560783469,
+   "whale_usd": 17827.06753,
+   "exit": 152.785822,
+   "pnl": 2.113889156619,
+   "closed_at": 1795565150974,
+   "reason": "whale"
   }
  ],
  "pending": {
@@ -437,22 +455,10 @@
   "0x34f09a89bdfbefb509b3e1c80891a750a22a1119": 1795371179100,
   "0x7256bdc5b2dce2600f79b1fd1469e80357936e98": 1795413632500,
   "0xbd8a4f1170abd4fcb3422d60ea1d005eb2bddcf1": 1795514744136,
-  "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9": 1795565097085,
-  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37": 1795565041411
+  "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9": 1795565148009,
+  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37": 1795565150974
  },
  "events": [
-  {
-   "t": 1795443966185,
-   "text": "c191 باز کرد xyz:AVGO short (~$3,122) ولی سقف 15 پوزیشن باز پر بود"
-  },
-  {
-   "t": 1795443438661,
-   "text": "c191 باز کرد GRASS short (~$2,249) ولی سقف 15 پوزیشن باز پر بود"
-  },
-  {
-   "t": 1795443657961,
-   "text": "c191 باز کرد ETHFI short (~$3,398) ولی سقف 15 پوزیشن باز پر بود"
-  },
   {
    "t": 1795443828923,
    "text": "c191 باز کرد xyz:SMSN long (~$14,855) ولی سقف 15 پوزیشن باز پر بود"
@@ -1240,8 +1246,20 @@
   {
    "t": 1795565043944,
    "text": "9aa5 باز کرد xyz:SILVER short (~$6,467) ولی سقف 15 پوزیشن باز پر بود"
+  },
+  {
+   "t": 1795565150974,
+   "text": "کپی مجازی بسته شد (نهنگ بست): c191 xyz:NVDA شورت سود/زیان +2.11$"
+  },
+  {
+   "t": 1795565144047,
+   "text": "کپی مجازی باز شد: c191 HYPE لانگ ورود 59.5864 (حجم نهنگ ~$32,171)"
+  },
+  {
+   "t": 1795565150974,
+   "text": "c191 باز کرد xyz:NVDA long (~$9,224) ولی سقف 15 پوزیشن باز پر بود"
   }
  ],
- "data_ts": 1795565111632,
+ "data_ts": 1795565199922,
  "started": 1795416439329
 }
