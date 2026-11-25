@@ -477,7 +477,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     (DATA.open || []).forEach(function (p) { if (BC[botId(p)]) { botAdj += BC[botId(p)].pnl - (p.upnl || 0); return; } rowsO.push({ bot: p, coin: p.coin, side: p.side, lev: p.lev, entry: p.entry, mark: p.mark, u: p.upnl, margin: p.margin, tag: p.tag, addr: (p.key || "").split("|")[0], ts: p.opened_at, kind: "ربات" }); });
     M.open.forEach(function (p) { var mk = marks[p.coin], u = mk ? calcU(p, mk.px) : null; if (u != null) manU += u; rowsO.push({ coin: p.coin, side: p.side, lev: p.lev, entry: p.entry, mark: mk ? mk.px : null, u: u, margin: p.margin, tag: p.tag, addr: p.addr, ts: p.openedAt, kind: "دستی", man: p }); });
     Object.keys(BC).forEach(function (k) { var c = BC[k]; if (botClosedById[k]) botAdj += c.pnl - botClosedById[k].pnl; rowsC.push({ coin: c.coin, src: c.src || c.coin, side: c.side, lev: c.lev, entry: c.entry, exit: c.exit, pnl: c.pnl, margin: c.margin, tag: c.tag, addr: c.addr, ts: c.at, kind: "ربات", why: "بستی" }); });
-    (DATA.closed || []).forEach(function (t) { if (BC[botId(t)]) return; rowsC.push({ coin: t.coin, src: t.src || t.coin, side: t.side, lev: t.lev, entry: t.entry, exit: t.exit, pnl: t.pnl, margin: t.margin, tag: t.tag, addr: (t.key || "").split("|")[0], ts: t.closed_at, kind: "ربات", why: t.reason === "whale" ? "نهنگ بست" : t.reason === "liq" ? "تصفیه" : "دستی" }); });
+    (DATA.closed || []).forEach(function (t) { if (BC[botId(t)]) return; rowsC.push({ coin: t.coin, src: t.src || t.coin, side: t.side, lev: t.lev, entry: t.entry, exit: t.exit, pnl: t.pnl, margin: t.margin, tag: t.tag, addr: (t.key || "").split("|")[0], ts: t.closed_at, kind: "ربات", why: t.reason === "whale" ? "نهنگ بست" : t.reason === "liq" ? "تصفیه" : t.reason === "stop" ? "استاپ ۳۰٪" : "دستی" }); });
     M.closed.forEach(function (t) { manR += t.pnl; rowsC.push({ coin: t.coin, src: t.src || t.coin, side: t.side, lev: t.lev, entry: t.entry, exit: t.exit, pnl: t.pnl, margin: t.margin, tag: t.tag, addr: t.addr, ts: t.closedAt, kind: "دستی", why: "بستی" }); });
     rowsO.sort(function (a, b) { return b.ts - a.ts; }); rowsC.sort(function (a, b) { return b.ts - a.ts; });
     var eq = DATA.equity + manR + manU + botAdj, pct = clamp((eq - START) / (GOAL - START)) * 100, tot = eq - START;
@@ -575,7 +575,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     if (loadErr) { banner.hidden = false; txt.textContent = "تازه‌سازی صفحه خطا داد (" + loadErr + "). داده‌ی قبلی نشان داده می‌شه."; }
     else if (stale) { banner.hidden = false; txt.textContent = "ربات حدود " + ago(DATA.updated).replace(" پیش", "") + " است که چیزی ننوشته (معمولاً هر نیم ساعت حداقل یک‌بار می‌نویسه). احتمالاً اجرای GitHub متوقف شده؛ از تب Actions → whale-bot می‌شه دید و با Run workflow دوباره روشنش کرد."; }
     else banner.hidden = true;
-    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۱۶";
+    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۱۷";
   }
   function renderFeed(set, feedId, flt) {
     var all = [];
@@ -684,7 +684,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     var closed = DATA.closed || [], wins = closed.filter(function (t) { return t.pnl > 0; }).length, used = (DATA.open || []).reduce(function (s, p) { return s + p.margin; }, 0);
     stat(ps, "بسته‌شده (۶۰ تای آخر)", String(closed.length)); stat(ps, "وین‌ریت", closed.length ? Math.round(100 * wins / closed.length) + "٪" : "—");
     stat(ps, "موجودی بسته‌ها", money(DATA.balance)); stat(ps, "آزاد برای کپی", money(Math.max(0, DATA.balance - used)));
-    $("p-rules").textContent = "ربات خودش و بدون دکمه کپی می‌کنه: هر ورودِ هر کدوم از ۱۱ کیف‌پول که حجمش از " + usd(S.min_usd) + " بیشتر باشه، با مارجین " + money(S.margin) + " و لوریج " + S.leverage + "x و تعداد پوزیشن هم‌زمان فقط به مارجین آزاد حساب بستگی دارد (مثل حساب واقعی: موجودی + سود/زیان بازها − مارجین درگیر). ورود با قیمت فعلی و ۰٫۰۳٪ لغزش بدتر، کارمزد ۰٫۰۴۵٪ هر طرف، تصفیه در ۹۰٪ ضرر مارجین. وقتی نهنگ کل پوزیشنش رو بست، پوزیشن مجازی هم بسته می‌شه. طلا جداست: هر لانگ و هر شورتِ طلای نهنگ‌ها روی PAXGUSDT (فیوچرزِ طلای بایننس که شورت هم دارد) با قیمت بایننس، لوریج ۱x و مارجین " + money(S.gold_margin || 100) + " کپی می‌شه، با همان قاعده‌ی مارجین آزاد. اگه قیمت بایننس در دسترس نباشه از قیمت طلای Hyperliquid استفاده می‌شه. این عددها داخل فایل config.json هستن.";
+    $("p-rules").textContent = "ربات خودش و بدون دکمه کپی می‌کنه (فقط اگر احتمال تاریخی باخت زیر ۴۰٪ باشد، حداکثر ۳۰٪ مارجین حساب روی هر نهنگ، و استاپ خودکار در ۳۰٪ ضرر مارجین): هر ورودِ هر کدوم از ۱۱ کیف‌پول که حجمش از " + usd(S.min_usd) + " بیشتر باشه، با مارجین " + money(S.margin) + " و لوریج " + S.leverage + "x و تعداد پوزیشن هم‌زمان فقط به مارجین آزاد حساب بستگی دارد (مثل حساب واقعی: موجودی + سود/زیان بازها − مارجین درگیر). ورود با قیمت فعلی و ۰٫۰۳٪ لغزش بدتر، کارمزد ۰٫۰۴۵٪ هر طرف، تصفیه در ۹۰٪ ضرر مارجین. وقتی نهنگ کل پوزیشنش رو بست، پوزیشن مجازی هم بسته می‌شه. طلا جداست: هر لانگ و هر شورتِ طلای نهنگ‌ها روی PAXGUSDT (فیوچرزِ طلای بایننس که شورت هم دارد) با قیمت بایننس، لوریج ۱x و مارجین " + money(S.gold_margin || 100) + " کپی می‌شه، با همان قاعده‌ی مارجین آزاد. اگه قیمت بایننس در دسترس نباشه از قیمت طلای Hyperliquid استفاده می‌شه. این عددها داخل فایل config.json هستن.";
     var ol = $("p-open"); ol.textContent = "";
     if (!(DATA.open || []).length) ol.appendChild(el("p", "empty", "هنوز ربات پوزیشنی باز نکرده. وقتی نهنگی ورود بزرگ داشته باشه خودکار اینجا میاد."));
     (DATA.open || []).forEach(function (p) {
@@ -700,7 +700,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
       var c = el("article", "card"), r = el("div", "row");
       r.appendChild(el("strong", null, t.coin + " " + (t.side === "long" ? "لانگ" : "شورت") + " " + t.lev + "x"));
       r.appendChild(el("span", "num " + (t.pnl >= 0 ? "up" : "down"), (t.pnl >= 0 ? "+" : "-") + money(Math.abs(t.pnl)).replace("-", ""))); c.appendChild(r);
-      c.appendChild(el("p", "sub num", price(t.entry) + " ← " + price(t.exit) + " · " + (t.reason === "whale" ? "نهنگ بست" : t.reason === "liq" ? "تصفیه" : "دستی") + " · از " + t.tag + " · " + ago(t.closed_at)));
+      c.appendChild(el("p", "sub num", price(t.entry) + " ← " + price(t.exit) + " · " + (t.reason === "whale" ? "نهنگ بست" : t.reason === "liq" ? "تصفیه" : t.reason === "stop" ? "استاپ ۳۰٪" : "دستی") + " · از " + t.tag + " · " + ago(t.closed_at)));
       cl.appendChild(c);
     });
     var ev = $("p-events"); ev.textContent = "";

@@ -122,14 +122,49 @@ def free_margin(st, marks=None):
     return st["balance"] + upl - sum(p["margin"] for p in st["open"].values())
 
 
+RISK_HIST = {}
+
+
+def risk_of(addr, coin, side):
+    """Historical loss probability of this whale on this coin+side (same method as the page). None = not enough history."""
+    h = RISK_HIST.get(addr) or {}
+    p = h.get("prof")
+    if not p or p.get("n", 0) < 30:
+        return None
+    K = 6
+    cs = (h.get("coins") or {}).get(f"{coin}|{side}")
+    if cs and cs["n"] >= 8:
+        L, n = cs["n"] - cs["w"], cs["n"]
+    else:
+        s_ = p["sides"][side]
+        L, n = s_["n"] - s_["w"], s_["n"]
+    return (L + K * p["lossRate"]) / (n + K)
+
+
+def log_once(st, now, text):
+    if not any(e["text"] == text for e in st["events"][-30:]):
+        log(st, now, text)
+
+
 def open_paper(st, cfg, w, coin, side, avg_px, usd, now, marks):
     key = f"{w['addr']}|{coin}|{side}"
     if key in st["open"]:
         return
     S = cfg["settings"]
+    if key in st.setdefault("stopped", {}):
+        return  # stopped out earlier; wait until the whale is flat before copying this coin+side again
     inst, margin, lev = coin, S["margin"], S["leverage"]
     if is_gold(coin):
         inst, margin, lev = "PAXG", S.get("gold_margin", 100), 1
+    rk = risk_of(w["addr"], coin, side)
+    if rk is not None and rk >= S.get("risk_max", 0.40):
+        log_once(st, now, f"{w['tag']} باز کرد {coin} {'لانگ' if side == 'long' else 'شورت'} (~${usd:,.0f}) ولی احتمال تاریخی باخت {rk:.0%} از حد {S.get('risk_max', 0.40):.0%} بالاتر بود؛ کپی نشد")
+        return
+    eq = st["balance"] + sum(unreal(p, marks.get(p["coin"], p["entry"])) for p in st["open"].values())
+    used_w = sum(p["margin"] for p in st["open"].values() if p["key"].startswith(w["addr"] + "|"))
+    if used_w + margin > S.get("wallet_cap", 0.30) * eq:
+        log_once(st, now, f"{w['tag']} باز کرد {coin} {side} (~${usd:,.0f}) ولی سقف {S.get('wallet_cap', 0.30):.0%} مارجین برای هر نهنگ پر بود (الان {used_w:,.0f}$ از {eq:,.0f}$)")
+        return
     avail = free_margin(st, marks)
     if avail < margin:
         log(st, now, f"{w['tag']} باز کرد {coin} {side} (~${usd:,.0f}) ولی مارجین آزاد کافی نبود (آزاد {avail:,.0f}$، لازم {margin:,.0f}$)")
@@ -156,7 +191,7 @@ def close_paper(st, key, px, now, reason):
     st["balance"] += pnl
     st["closed"].append({**pos, "exit": ex, "pnl": pnl, "closed_at": now, "reason": reason})
     st["closed"] = st["closed"][-300:]
-    why = {"whale": "نهنگ بست", "liq": "تصفیه"}.get(reason, reason)
+    why = {"whale": "نهنگ بست", "liq": "تصفیه", "stop": "استاپ"}.get(reason, reason)
     log(st, now, f"کپی مجازی بسته شد ({why}): {pos['tag']} {pos['coin']} {'لانگ' if pos['side'] == 'long' else 'شورت'} سود/زیان {pnl:+.2f}$")
 
 
@@ -202,6 +237,8 @@ def process_wallet(st, cfg, w, fills, marks, now):
             start = float(f.get("startPosition", 0) or 0)
             after = start + (sz if f.get("side") == "B" else -sz)
             key = f"{addr}|{coin}|{side}"
+            if abs(after) * px < 20:
+                st.get("stopped", {}).pop(key, None)
             if key in st["open"] and abs(after) * px < 20:
                 close_paper(st, key, (marks.get("PAXG") or px) if is_gold(coin) else px, t, "whale")
             continue
@@ -489,6 +526,8 @@ def main():
         st["started"] = now
         st["dirty"] = True
     hist = load(HIST_F, {"wallets": {}})
+    RISK_HIST.clear()
+    RISK_HIST.update(hist.get("wallets", {}))
     prev = load(DATA_F, None)
     marks = marks_now()
     feeds, ords, fat, nfull = {}, {}, {}, 0
@@ -529,8 +568,17 @@ def main():
             print("wallet failed", w["tag"], e, file=sys.stderr)
     for key, p in list(st["open"].items()):
         m = marks.get(p["coin"])
-        if m and unreal(p, m) <= -0.9 * p["margin"]:
+        if not m:
+            continue
+        S_ = cfg["settings"]
+        if unreal(p, m) <= -0.9 * p["margin"]:
             close_paper(st, key, m, now, "liq")
+        else:
+            # hard stop: crypto at stop_pct of margin (5x leverage -> ~6% price move); gold (1x) at a price move
+            lim = -S_.get("gold_stop_price", 0.03) * p["margin"] if p["lev"] == 1 else -S_.get("stop_pct", 0.30) * p["margin"]
+            if unreal(p, m) <= lim:
+                st.setdefault("stopped", {})[key] = now
+                close_paper(st, key, m, now, "stop")
     if refresh_history(hist, cfg, now):
         with open(HIST_F, "w", encoding="utf-8") as f:
             json.dump(hist, f, ensure_ascii=False)

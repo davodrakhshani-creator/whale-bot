@@ -103,6 +103,10 @@
     "margin": 50,
     "leverage": 5,
     "gold_margin": 100,
-    "min_usd": 2000
+    "min_usd": 2000,
+    "stop_pct": 0.3,
+    "gold_stop_price": 0.03,
+    "risk_max": 0.4,
+    "wallet_cap": 0.3
   }
 }
