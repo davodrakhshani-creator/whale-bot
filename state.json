@@ -1185,16 +1185,6 @@
   }
  ],
  "pending": {
-  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|xyz:SOXL|long": {
-   "usd": 626.5911600000001,
-   "size": 20.28,
-   "last": 1795639801035
-  },
-  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|xyz:AVGO|long": {
-   "usd": 1478.3674,
-   "size": 4.96,
-   "last": 1795640101228
-  },
   "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|xyz:BB|short": {
    "usd": 14.474989999999998,
    "size": 1.7,
@@ -1212,7 +1202,7 @@
   "0x7256bdc5b2dce2600f79b1fd1469e80357936e98": 1795413632500,
   "0xbd8a4f1170abd4fcb3422d60ea1d005eb2bddcf1": 1795514744136,
   "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9": 1795641161663,
-  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37": 1795641348662
+  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37": 1795641991383
  },
  "events": [
   {
@@ -2016,7 +2006,7 @@
    "text": "کپی مجازی بسته شد (استاپ): c191 PURR شورت سود/زیان -42.03$"
   }
  ],
- "data_ts": 1795641432464,
+ "data_ts": 1795641996419,
  "started": 1795416439329,
  "stopped": {
   "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|PURR|short": 1795641133627
