@@ -112,8 +112,14 @@ def log(st, now, text):
     print(text)
 
 
-def free_margin(st):
-    return st["balance"] - sum(p["margin"] for p in st["open"].values())
+def free_margin(st, marks=None):
+    """Like a real cross-margin account: available = balance + unrealised PnL of open positions - margin already used."""
+    upl = 0.0
+    for p in st["open"].values():
+        mk = (marks or {}).get(p["coin"])
+        if mk:
+            upl += unreal(p, mk)
+    return st["balance"] + upl - sum(p["margin"] for p in st["open"].values())
 
 
 def open_paper(st, cfg, w, coin, side, avg_px, usd, now, marks):
@@ -124,14 +130,9 @@ def open_paper(st, cfg, w, coin, side, avg_px, usd, now, marks):
     inst, margin, lev = coin, S["margin"], S["leverage"]
     if is_gold(coin):
         inst, margin, lev = "PAXG", S.get("gold_margin", 100), 1
-        if sum(1 for p in st["open"].values() if p["coin"] == "PAXG") >= S.get("gold_max", 3):
-            log(st, now, f"{w['tag']} خرید طلا (~${usd:,.0f}) ولی سقف {S.get('gold_max', 3)} پوزیشن هم‌زمان طلا پر بود (نهنگ‌های طلا هم‌زمان می‌خرند)")
-            return
-    if not is_gold(coin) and sum(1 for p in st["open"].values() if p["coin"] != "PAXG") >= S["max_open"]:  # gold has its own slots (gold_max)
-        log(st, now, f"{w['tag']} باز کرد {coin} {side} (~${usd:,.0f}) ولی سقف {S['max_open']} پوزیشن باز پر بود")
-        return
-    if free_margin(st) < margin:
-        log(st, now, f"{w['tag']} باز کرد {coin} {side} (~${usd:,.0f}) ولی موجودی آزاد کافی نبود")
+    avail = free_margin(st, marks)
+    if avail < margin:
+        log(st, now, f"{w['tag']} باز کرد {coin} {side} (~${usd:,.0f}) ولی مارجین آزاد کافی نبود (آزاد {avail:,.0f}$، لازم {margin:,.0f}$)")
         return
     base = marks.get(inst) or avg_px
     entry = base * (1 + SLIP) if side == "long" else base * (1 - SLIP)
