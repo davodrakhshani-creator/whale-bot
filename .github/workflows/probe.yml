@@ -8,9 +8,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          echo "== catalog"; curl -s -m 20 https://models.github.ai/catalog/models -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" | python3 -c "import sys,json; d=json.load(sys.stdin); print([ (m['id'],m.get('rate_limit_tier')) for m in d][:60])" || true
-          for M in openai/gpt-4.1 openai/gpt-4.1-mini; do
-            echo "== chat $M"; curl -s -m 60 -w "\nHTTP %{http_code} %{time_total}s\n" https://models.github.ai/inference/chat/completions -H "Authorization: Bearer $GITHUB_TOKEN" -H "Content-Type: application/json" -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" -d "{\"model\":\"$M\",\"messages\":[{\"role\":\"user\",\"content\":\"Reply with JSON {\\\"ok\\\":true}\"}],\"response_format\":{\"type\":\"json_object\"},\"max_tokens\":30}" | head -c 600
-          done
+          H='-H Accept:application/vnd.github+json -H X-GitHub-Api-Version:2022-11-28'
+          echo "== A catalog"; curl -si -m 20 https://models.github.ai/catalog/models -H "Authorization: Bearer $GITHUB_TOKEN" $H | head -c 700; echo
+          echo "== B chat new endpoint"; curl -si -m 60 https://models.github.ai/inference/chat/completions -H "Authorization: Bearer $GITHUB_TOKEN" -H "Content-Type: application/json" $H -d '{"model":"openai/gpt-4.1-mini","messages":[{"role":"user","content":"Say hi in JSON {\"hi\":1}"}],"max_tokens":30}' | head -c 900; echo
+          echo "== C chat azure endpoint"; curl -si -m 60 https://models.inference.ai.azure.com/chat/completions -H "Authorization: Bearer $GITHUB_TOKEN" -H "Content-Type: application/json" -d '{"model":"gpt-4.1-mini","messages":[{"role":"user","content":"hi"}],"max_tokens":20}' | head -c 700; echo
         env:
           GITHUB_TOKEN: ${{ github.token }}
