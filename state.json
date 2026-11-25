@@ -1,5 +1,5 @@
 {
- "balance": 1072.3918806265303,
+ "balance": 1071.0903085563748,
  "open": {
   "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|PUMP|short": {
    "key": "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|PUMP|short",
@@ -290,20 +290,6 @@
    "opened_at": 1795628563750,
    "whale_usd": 56071.053400000004
   },
-  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|xyz:SP500|short": {
-   "key": "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|xyz:SP500|short",
-   "tag": "c191",
-   "group": "طلا",
-   "coin": "xyz:SP500",
-   "src": "xyz:SP500",
-   "side": "short",
-   "entry": 7139.007654999999,
-   "whale_px": 7130.766604278075,
-   "margin": 50,
-   "lev": 5,
-   "opened_at": 1795629888205,
-   "whale_usd": 26669.0671
-  },
   "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|HYPE|short": {
    "key": "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|HYPE|short",
    "tag": "c191",
@@ -317,6 +303,20 @@
    "lev": 5,
    "opened_at": 1795634417548,
    "whale_usd": 3439.9959
+  },
+  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|xyz:SP500|long": {
+   "key": "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|xyz:SP500|long",
+   "tag": "c191",
+   "group": "طلا",
+   "coin": "xyz:SP500",
+   "src": "xyz:SP500",
+   "side": "long",
+   "entry": 7169.85031,
+   "whale_px": 7167.6,
+   "margin": 50,
+   "lev": 5,
+   "opened_at": 1795636133116,
+   "whale_usd": 4465.4148000000005
   }
  },
  "closed": [
@@ -1124,6 +1124,24 @@
    "pnl": 3.4391705470047027,
    "closed_at": 1795634417548,
    "reason": "whale"
+  },
+  {
+   "key": "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|xyz:SP500|short",
+   "tag": "c191",
+   "group": "طلا",
+   "coin": "xyz:SP500",
+   "src": "xyz:SP500",
+   "side": "short",
+   "entry": 7139.007654999999,
+   "whale_px": 7130.766604278075,
+   "margin": 50,
+   "lev": 5,
+   "opened_at": 1795629888205,
+   "whale_usd": 26669.0671,
+   "exit": 7169.75028,
+   "pnl": -1.3015720701556237,
+   "closed_at": 1795636133116,
+   "reason": "whale"
   }
  ],
  "pending": {},
@@ -1137,18 +1155,10 @@
   "0x34f09a89bdfbefb509b3e1c80891a750a22a1119": 1795371179100,
   "0x7256bdc5b2dce2600f79b1fd1469e80357936e98": 1795413632500,
   "0xbd8a4f1170abd4fcb3422d60ea1d005eb2bddcf1": 1795514744136,
-  "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9": 1795636031611,
-  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37": 1795635960014
+  "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9": 1795636160750,
+  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37": 1795636139428
  },
  "events": [
-  {
-   "t": 1795573863632,
-   "text": "c191 باز کرد xyz:TSM long (~$2,999) ولی سقف 15 پوزیشن باز پر بود"
-  },
-  {
-   "t": 1795574110215,
-   "text": "a70a باز کرد xyz:SKHY long (~$10,000) ولی سقف 15 پوزیشن باز پر بود"
-  },
   {
    "t": 1795574230351,
    "text": "9aa5 باز کرد xyz:AAPL long (~$2,427) ولی سقف 15 پوزیشن باز پر بود"
@@ -1940,8 +1950,16 @@
   {
    "t": 1795634898761,
    "text": "c191 باز کرد xyz:BRENTOIL short (~$3,707) ولی مارجین آزاد کافی نبود (آزاد 16$، لازم 50$)"
+  },
+  {
+   "t": 1795636133116,
+   "text": "کپی مجازی بسته شد (نهنگ بست): c191 xyz:SP500 شورت سود/زیان -1.30$"
+  },
+  {
+   "t": 1795636133116,
+   "text": "کپی مجازی باز شد: c191 xyz:SP500 لانگ ورود 7169.85 (حجم نهنگ ~$4,465)"
   }
  ],
- "data_ts": 1795636081730,
+ "data_ts": 1795636171752,
  "started": 1795416439329
 }
