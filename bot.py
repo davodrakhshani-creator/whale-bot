@@ -127,7 +127,7 @@ def open_paper(st, cfg, w, coin, side, avg_px, usd, now, marks):
         if sum(1 for p in st["open"].values() if p["coin"] == "PAXG") >= S.get("gold_max", 3):
             log(st, now, f"{w['tag']} خرید طلا (~${usd:,.0f}) ولی سقف {S.get('gold_max', 3)} پوزیشن هم‌زمان طلا پر بود (نهنگ‌های طلا هم‌زمان می‌خرند)")
             return
-    if len(st["open"]) >= S["max_open"]:
+    if not is_gold(coin) and sum(1 for p in st["open"].values() if p["coin"] != "PAXG") >= S["max_open"]:  # gold has its own slots (gold_max)
         log(st, now, f"{w['tag']} باز کرد {coin} {side} (~${usd:,.0f}) ولی سقف {S['max_open']} پوزیشن باز پر بود")
         return
     if free_margin(st) < margin:
