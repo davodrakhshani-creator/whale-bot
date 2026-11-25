@@ -1,32 +1,55 @@
 name: whale-bot
-# GitHub's "*/5" schedule is often delayed by hours. So each run stays alive ~5h and polls every 4.5 min itself;
-# the schedule/dispatch/push triggers only restart it (a new run replaces the old one; state is committed each loop).
+# One run stays alive ~5.5h and polls every ~75s itself. Gaps are closed three ways:
+#  1) when its time is up it dispatches the next run itself (no waiting for GitHub's unreliable cron),
+#  2) a cron watchdog every 10 min starts a run if none is active (a scheduled run exits at once if one is),
+#  3) a push/dispatch run takes over from an older one: the older run notices and exits at its next loop.
 on:
   schedule:
-    - cron: "7 */4 * * *"
+    - cron: "*/10 * * * *"
   workflow_dispatch:
   push:
     paths: ["bot.py", "config.json", ".github/workflows/run.yml"]
 permissions:
   contents: write
-concurrency:
-  group: whale-bot
-  cancel-in-progress: true
+  actions: write
 jobs:
   run:
     runs-on: ubuntu-latest
     timeout-minutes: 345
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
+      - name: Guard (watchdog exits if a loop is already running)
+        id: guard
+        run: |
+          OTHERS=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/run.yml/runs?status=in_progress&per_page=30" --jq "[.workflow_runs[]|select(.id!=$GITHUB_RUN_ID)]|length" || echo 0)
+          echo "other active runs: ${OTHERS:-0}"
+          if [ "$GITHUB_EVENT_NAME" = "schedule" ] && [ "${OTHERS:-0}" -gt 0 ]; then echo "skip=1" >> "$GITHUB_OUTPUT"; fi
       - uses: actions/checkout@v4
+        if: steps.guard.outputs.skip != '1'
       - uses: actions/setup-python@v5
+        if: steps.guard.outputs.skip != '1'
         with:
           python-version: "3.12"
       - name: Poll loop
+        id: loop
+        if: steps.guard.outputs.skip != '1'
         run: |
           git config user.name "whale-bot"
           git config user.email "whale-bot@users.noreply.github.com"
+          api="repos/$GITHUB_REPOSITORY/actions/workflows/run.yml/runs?status=in_progress&per_page=30"
+          if [ "$GITHUB_EVENT_NAME" != "schedule" ]; then  # taking over: give an older loop time to step aside
+            for i in $(seq 18); do
+              OLD=$(gh api "$api" --jq "[.workflow_runs[]|select(.id<$GITHUB_RUN_ID)]|length" || echo 0)
+              [ "${OLD:-0}" -eq 0 ] && break
+              sleep 10
+            done
+          fi
           END=$(( $(date +%s) + 5*3600 + 1800 ))
+          superseded=0
           while [ $(date +%s) -lt $END ]; do
+            NEWER=$(gh api "$api" --jq "[.workflow_runs[]|select(.id>$GITHUB_RUN_ID and .event!=\"schedule\")]|length" || echo 0)
+            if [ "${NEWER:-0}" -gt 0 ]; then echo "a newer run took over"; superseded=1; break; fi
             python bot.py || echo "bot run failed"
             git add -A
             if ! git diff --cached --quiet; then
@@ -36,3 +59,8 @@ jobs:
             fi
             sleep 75
           done
+          [ "$superseded" -eq 0 ] && echo "chain=1" >> "$GITHUB_OUTPUT"
+          exit 0
+      - name: Start the next run
+        if: steps.loop.outputs.chain == '1'
+        run: gh api -X POST "repos/$GITHUB_REPOSITORY/actions/workflows/run.yml/dispatches" -f ref="$GITHUB_REF_NAME"

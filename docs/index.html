@@ -165,7 +165,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
       <span class="sub" id="updated"></span>
     </div>
     <div class="feed" id="feed" aria-live="polite"></div>
-    <p class="sub">تکه‌های هم‌کوین و هم‌جهت با فاصله‌ی کمتر از ۵ دقیقه یک حرکت حساب می‌شن. «سابقه» از پوزیشن‌های کامل‌شده‌ی ۹۰ روز اخیر همون نهنگ روی همون کوین و جهت حساب می‌شه و پیش‌بینی نیست. داده هر ۵ تا ۱۵ دقیقه توسط ربات تازه می‌شه (GitHub گاهی دیر اجرا می‌کنه) و صفحه‌ی باز هر دقیقه دوباره می‌خونه.</p>
+    <p class="sub">تکه‌های هم‌کوین و هم‌جهت با فاصله‌ی کمتر از ۵ دقیقه یک حرکت حساب می‌شن. «سابقه» از پوزیشن‌های کامل‌شده‌ی ۹۰ روز اخیر همون نهنگ روی همون کوین و جهت حساب می‌شه و پیش‌بینی نیست. داده هر ۱ تا ۲ دقیقه توسط ربات تازه می‌شه (GitHub گاهی دیر اجرا می‌کنه) و صفحه‌ی باز هر دقیقه دوباره می‌خونه.</p>
   </section>
 
   <section class="view" id="v-wallets" hidden>
@@ -196,7 +196,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
 
   <section class="view" id="v-scalp" hidden>
     <div class="banner"><span>فقط اسکلپرهایی که هر سه شرط را دارند: ۱) وین‌ریتِ پوزیشن بالای ۶۰٪، ۲) سود کلِ ۹۰ روز خیلی مثبت (حداقل چند ده هزار دلار) و ۳) میانگین نگه‌داری کمتر از ۱۵ دقیقه، با حداقل ۵۰۰ پوزیشن. همه‌ی ۹۵ کیف‌پولی که امروز اسکلپ کرده بودند را بررسی کردم و این شش تا ماندند. بقیه یا سود منفی داشتند، یا سود کم (مثل b040 که خالص فقط حدود ۱٬۰۰۰ دلار بود)، یا نمونه‌ی کوچک. این فقط از بین کیف‌پول‌هایی است که امروز در ساعت‌های اخیر دیده شدند؛ اسکلپرهای ساکتِ امروز را ندیدم.</span></div>
-    <div class="banner"><span>هشدار مهم: این‌ها هر پوزیشن را ۱ تا ۱۵ دقیقه نگه می‌دارند و ربات ما هر ۵ تا ۱۵ دقیقه یک‌بار می‌خونه. وقتی ما ورودشان را ببینیم معمولاً پوزیشن بسته شده. پس اینجا فقط تماشا و آمار است و ربات خودکار کپی نمی‌کنه. دکمه‌ی دستی هم عمداً نیست.</span></div>
+    <div class="banner"><span>هشدار مهم: این‌ها هر پوزیشن را ۱ تا ۱۵ دقیقه نگه می‌دارند و ربات ما هر ۱ تا ۲ دقیقه یک‌بار می‌خونه. وقتی ما ورودشان را ببینیم معمولاً پوزیشن بسته شده. پس اینجا فقط تماشا و آمار است و ربات خودکار کپی نمی‌کنه. دکمه‌ی دستی هم عمداً نیست.</span></div>
     <h2>اسکلپ‌های بازِ ۳۰ دقیقه‌ی اخیر</h2>
     <div class="feed" id="scalp-feed" aria-live="polite"></div>
     <h2>شش اسکلپر تاییدشده (به ترتیب سود)</h2>
@@ -786,17 +786,17 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     });
     return { lines: L, found: found, open: open };
   }
-  var CND = null, CNDat = 0;
+  var CND = {};
   function firstOk(ps) { return new Promise(function (res) { var left = ps.length; ps.forEach(function (p) { p.then(function (v) { if (v) res(v); else if (!--left) res(null); }, function () { if (!--left) res(null); }); }); }); }
-  function loadCandleFile() {
-    if (CND && Date.now() - CNDat < 120000) return Promise.resolve(CND);
-    var bust = "?t=" + Math.floor(Date.now() / 60000);
-    return firstOk([getJson("candles.json" + bust).catch(function () { return null; }), getJson(RAW.replace("data.json", "candles.json") + bust).catch(function () { return null; })])
-      .then(function (f) { if (f && f.series) { CND = f; CNDat = Date.now(); } return CND; });
+  function loadCoinFile(coin) {
+    var hit = CND[coin]; if (hit && Date.now() - hit.at < 120000) return Promise.resolve(hit.f);
+    var nm = "candles/" + coin.replace(/[:\/]/g, "_") + ".json?t=" + Math.floor(Date.now() / 60000);
+    return firstOk([getJson(nm).catch(function () { return null; }), getJson(RAW.replace("data.json", nm)).catch(function () { return null; })])
+      .then(function (f) { if (f && f.tfs) CND[coin] = { f: f, at: Date.now() }; return f && f.tfs ? f : (hit ? hit.f : null); });
   }
   function bundled(coin, tf) {
-    return loadCandleFile().then(function (f) {
-      var s = f && f.series && f.series[coin] && f.series[coin][tf];
+    return loadCoinFile(coin).then(function (f) {
+      var s = f && f.tfs && f.tfs[tf];
       return s && s.c && s.c.length ? { cs: s.c.map(function (a) { return { t: a[0], o: a[1], h: a[2], l: a[3], c: a[4] }; }), at: s.at } : null;
     }).catch(function () { return null; });
   }
@@ -889,7 +889,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     });
     cv.addEventListener("pointerup", function () { drag = null; }); cv.addEventListener("pointercancel", function () { drag = null; });
     function fail(msg) {
-      if (/abort/i.test(msg)) msg = "گوشی تو به Hyperliquid جواب نگرفت و ربات هم هنوز کندل این کوین را نگذاشته (چند دقیقه‌ی دیگر امتحان کن)";
+      if (/abort|fetch|network/i.test(msg)) msg = "گوشی تو به Hyperliquid جواب نگرفت و ربات هم هنوز کندل این کوین را نگذاشته (چند دقیقه‌ی دیگر امتحان کن)";
       cont.style.display = "none"; info.textContent = ""; var rt = el("button", "btn primary", "دوباره امتحان کن"); rt.type = "button";
       var m = el("p", "ai", "چارت نیومد: " + msg); m.appendChild(document.createElement("br")); m.appendChild(rt); info.parentNode.insertBefore(m, info);
       rt.addEventListener("click", function () { m.remove(); cont.style.display = ""; load(); });
@@ -916,7 +916,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
           return;
         }
         return live(10000).then(function (cs) { if (gone || my !== token) return; render(cs, "کندل‌ها از Hyperliquid (" + cur + ")"); });
-      }).catch(function (e) { if (!gone && my === token) fail((e && e.message) || String(e)); });
+      }).catch(function (e) { if (!gone && my === token) fail(/abort|fetch|network/i.test((e && e.message) || "") ? "گوشی تو به Hyperliquid وصل نشد و ربات هم هنوز کندل این کوین را ذخیره نکرده؛ چند دقیقه بعد دوباره امتحان کن." : ((e && e.message) || String(e))); });
     }
     load();
   }
