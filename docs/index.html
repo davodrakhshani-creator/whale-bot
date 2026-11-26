@@ -487,13 +487,14 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     }
     function addrOf(r) { return r.addr || ""; }
     function srcGroup(r) { var src = r.bot ? (r.bot.src || r.bot.coin) : null, w = W[r.addr]; if (!src || !w) return null; var best = null; w.groups.forEach(function (g) { if (g.coin === src && sideOf(g.dir) === r.side && isOpenDir(g.dir) && r.ts >= g.first - 60000 && r.ts <= g.last + 60000) best = g; }); return best; }
+    function chartGroup(r) { var sg = srcGroup(r); if (sg) return sg; var b = r.bot || {}, src = b.src || b.coin || r.src || r.coin; return { id: "pos-" + (b.key || r.ts), addr: r.addr, tag: r.tag, coin: src, dir: r.side === "long" ? "Open Long" : "Open Short", first: r.ts, last: r.ts, usd: b.whale_usd || 0, size: b.whale_px ? (b.whale_usd || 0) / b.whale_px : 0, synthetic: true }; }
     var ol = $("p-open"); ol.textContent = "";
     if (!rowsO.length) ol.appendChild(el("p", "empty", "هنوز پوزیشنی باز نیست."));
     rowsO.forEach(function (r) {
       var c = el("article", "card"), r1 = el("div", "row"); r1.appendChild(link(r.tag, addrOf(r)));
       var wh = el("span", "when"); wh.appendChild(el("span", "num", clock(r.ts))); wh.appendChild(document.createTextNode(" · " + ago(r.ts))); r1.appendChild(wh); c.appendChild(r1);
       c.appendChild(head(r));
-      var sg = srcGroup(r); if (sg) { c.appendChild(el("p", "sub", "علت: نهنگ " + r.tag + " ساعت " + clock(sg.first) + " " + dirFa(sg.dir) + " (حجم " + usd(sg.usd) + ")")); var cb2 = el("button", "btn", "چارت نهنگ"); cb2.type = "button"; cb2.addEventListener("click", function () { openChart(sg); }); c.appendChild(cb2); }
+      var sg = srcGroup(r); if (sg) c.appendChild(el("p", "sub", "علت: نهنگ " + r.tag + " ساعت " + clock(sg.first) + " " + dirFa(sg.dir) + " (حجم " + usd(sg.usd) + ")")); if (r.bot || r.addr) { var cg = chartGroup(r), cb2 = el("button", "btn", "چارت نهنگ"); cb2.type = "button"; cb2.addEventListener("click", function () { openChart(cg); }); c.appendChild(cb2); }
       var st = el("div", "stats"); stat(st, "ورود", price(r.entry)); stat(st, "الان", r.mark ? price(r.mark) : "در راهه"); stat(st, "مارجین", money(r.margin));
       if (r.u != null) stat(st, "سود/زیان", sgn(r.u) + " (" + (r.u >= 0 ? "+" : "") + (100 * r.u / r.margin).toFixed(1) + "٪)", r.u >= 0 ? "up" : "down");
       c.appendChild(st);
@@ -517,6 +518,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
       stat(st, "سود/زیان", sgn(r.pnl) + " (" + (r.pnl >= 0 ? "+" : "") + (100 * r.pnl / r.margin).toFixed(1) + "٪)", r.pnl >= 0 ? "up" : "down"); c.appendChild(st);
       var dd = W[r.addr], rk = dd ? riskOf(dd, { coin: r.src || r.coin, dir: r.side === "long" ? "Open Long" : "Open Short" }) : null;
       if (rk) { var rl = el("div", "row"); rl.appendChild(el("span", "pill " + (r.pnl < 0 ? "bad" : "good"), "این بار: " + (r.pnl < 0 ? "باخت" : "برد"))); rl.appendChild(el("span", "pill " + rk.lvl, "احتمال تاریخی باخت ≈ " + rk.pct + "٪ (بازه " + rk.lo + " تا " + rk.hi + "٪)")); c.appendChild(rl); c.appendChild(el("p", "sub", "مبنا: " + rk.basis + ". از سابقه‌ی همان نهنگ حساب شده، پیش‌بینی نیست.")); }
+      if (r.addr) { var cg2 = chartGroup(r), cb4 = el("button", "btn", "چارت نهنگ"); cb4.type = "button"; cb4.addEventListener("click", function () { openChart(cg2); }); c.appendChild(cb4); }
       cl.appendChild(c);
     });
     if (rowsC.length) { var tcl = rowsC.reduce(function (s, r) { return s + r.pnl; }, 0); cl.appendChild(el("p", "sub", "جمع سود/زیان بسته‌شده‌ها: " + sgn(tcl))); }
@@ -567,7 +569,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     if (loadErr) { banner.hidden = false; txt.textContent = "تازه‌سازی صفحه خطا داد (" + loadErr + "). داده‌ی قبلی نشان داده می‌شه."; }
     else if (stale) { banner.hidden = false; txt.textContent = "ربات حدود " + ago(DATA.updated).replace(" پیش", "") + " است که چیزی ننوشته (معمولاً هر نیم ساعت حداقل یک‌بار می‌نویسه). احتمالاً اجرای GitHub متوقف شده؛ از تب Actions → whale-bot می‌شه دید و با Run workflow دوباره روشنش کرد."; }
     else banner.hidden = true;
-    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۱۸";
+    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۱۹";
   }
   function renderFeed(set, feedId, flt) {
     var all = [];
