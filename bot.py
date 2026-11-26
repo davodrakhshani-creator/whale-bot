@@ -427,15 +427,36 @@ def refresh_history(hist, cfg, now):
 TRAD_F = os.path.join(ROOT, "traders_hist.json")
 TRAD_OUT = os.path.join(ROOT, "docs", "traders.json")
 TRAD_TTL = 24 * 3600 * 1000
-TRAD_PER_RUN = 2
+TRAD_PER_RUN = 4
+TRAD_POOL = 200
 TRAD_MIN_N = 25
 
 
 def refresh_traders(now):
     """Position-level record (last ~90 days of fills) of a pool of strong Hyperliquid wallets; the page ranks them by loss rate."""
-    cands = load(os.path.join(ROOT, "traders_candidates.json"), [])
     th = load(TRAD_F, {"w": {}})
     ws = th["w"]
+    cpath = os.path.join(ROOT, "traders_candidates.json")
+    if now - th.get("pool_at", 0) > TRAD_TTL:
+        try:  # candidate pool: small, profitable, active accounts from Hyperliquid's public leaderboard
+            req = urllib.request.Request("https://stats-data.hyperliquid.xyz/Mainnet/leaderboard", headers={"User-Agent": "whale-bot"})
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                rows = json.loads(resp.read().decode())["leaderboardRows"]
+            def perf(r, w):
+                return next((v for k, v in r["windowPerformances"] if k == w), {"pnl": "0", "vlm": "0"})
+            pick = [r for r in rows if 5e3 <= float(r["accountValue"]) <= 3e5 and float(perf(r, "month")["pnl"]) > 3000
+                    and float(perf(r, "month")["vlm"]) > 2e5 and float(perf(r, "allTime")["pnl"]) > 20000]
+            pick.sort(key=lambda r: -float(perf(r, "allTime")["pnl"]))
+            new_pool = [r["ethAddress"] for r in pick[:TRAD_POOL]]
+            keep = [a for a, v in ws.items() if v.get("n") and a not in new_pool]
+            json.dump(new_pool + keep, open(cpath, "w"))
+            th["pool_at"] = now
+            th["w"] = ws = {a: v for a, v in ws.items() if a in set(new_pool + keep)}
+            print("trader pool", len(new_pool), "from", len(rows))
+        except Exception as e:
+            print("leaderboard failed", e, file=sys.stderr)
+            th["pool_at"] = now - TRAD_TTL + 3600000
+    cands = load(cpath, [])
     due = sorted([a for a in cands if now - ws.get(a, {}).get("at", 0) > TRAD_TTL], key=lambda a: ws.get(a, {}).get("at", 0))
     t0, changed = time.time(), False
     for a in due[:TRAD_PER_RUN]:
