@@ -1,5 +1,5 @@
 {
- "balance": 1048.3353530836714,
+ "balance": 1052.5675562294296,
  "open": {
   "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|PUMP|short": {
    "key": "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|PUMP|short",
@@ -263,21 +263,6 @@
    "whale_usd": 251076.5054,
    "ai": null
   },
-  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|HYPE|long": {
-   "key": "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|HYPE|long",
-   "tag": "c191",
-   "group": "طلا",
-   "coin": "HYPE",
-   "src": "HYPE",
-   "side": "long",
-   "entry": 61.217859849999996,
-   "whale_px": 61.23410068126845,
-   "margin": 50,
-   "lev": 5,
-   "opened_at": 1795647787316,
-   "whale_usd": 27593.92279,
-   "ai": null
-  },
   "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|GRAM|long": {
    "key": "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|GRAM|long",
    "tag": "c191",
@@ -291,6 +276,21 @@
    "lev": 5,
    "opened_at": 1795648058108,
    "whale_usd": 5999.6339499999995,
+   "ai": null
+  },
+  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|HYPE|short": {
+   "key": "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|HYPE|short",
+   "tag": "c191",
+   "group": "طلا",
+   "coin": "HYPE",
+   "src": "HYPE",
+   "side": "short",
+   "entry": 62.37578165,
+   "whale_px": 62.34819785369511,
+   "margin": 50,
+   "lev": 5,
+   "opened_at": 1795652897319,
+   "whale_usd": 13304.481940000001,
    "ai": null
   }
  },
@@ -1262,6 +1262,25 @@
    "pnl": -15.53104334289898,
    "closed_at": 1795652504247,
    "reason": "stop"
+  },
+  {
+   "key": "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|HYPE|long",
+   "tag": "c191",
+   "group": "طلا",
+   "coin": "HYPE",
+   "src": "HYPE",
+   "side": "long",
+   "entry": 61.217859849999996,
+   "whale_px": 61.23410068126845,
+   "margin": 50,
+   "lev": 5,
+   "opened_at": 1795647787316,
+   "whale_usd": 27593.92279,
+   "ai": null,
+   "exit": 62.309301600000005,
+   "pnl": 4.2322031457581595,
+   "closed_at": 1795652897319,
+   "reason": "whale"
   }
  ],
  "pending": {
@@ -1289,6 +1308,11 @@
    "usd": 1433.937,
    "size": 5.172,
    "last": 1795652588912
+  },
+  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|xyz:MU|short": {
+   "usd": 1383.1594699999998,
+   "size": 2.237,
+   "last": 1795652926364
   }
  },
  "last_seen": {
@@ -1301,18 +1325,10 @@
   "0x34f09a89bdfbefb509b3e1c80891a750a22a1119": 1795371179100,
   "0x7256bdc5b2dce2600f79b1fd1469e80357936e98": 1795413632500,
   "0xbd8a4f1170abd4fcb3422d60ea1d005eb2bddcf1": 1795514744136,
-  "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9": 1795652667002,
-  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37": 1795652800872
+  "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9": 1795652946877,
+  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37": 1795652985513
  },
  "events": [
-  {
-   "t": 1795592204300,
-   "text": "کپی مجازی باز شد: c191 ETH لانگ ورود 1636.14 (حجم نهنگ ~$13,989)"
-  },
-  {
-   "t": 1795592236393,
-   "text": "کپی مجازی باز شد: c191 SOL لانگ ورود 67.8719 (حجم نهنگ ~$8,648)"
-  },
   {
    "t": 1795592273187,
    "text": "کپی مجازی باز شد: c191 BTC لانگ ورود 58683.1 (حجم نهنگ ~$46,594)"
@@ -2104,9 +2120,17 @@
   {
    "t": 1795652504247,
    "text": "کپی مجازی بسته شد (استاپ): a70a xyz:SKHY شورت سود/زیان -15.53$"
+  },
+  {
+   "t": 1795652897319,
+   "text": "کپی مجازی بسته شد (نهنگ بست): c191 HYPE لانگ سود/زیان +4.23$"
+  },
+  {
+   "t": 1795652897319,
+   "text": "کپی مجازی باز شد: c191 HYPE شورت ورود 62.3758 (حجم نهنگ ~$13,304)"
   }
  ],
- "data_ts": 1795652889480,
+ "data_ts": 1795652981767,
  "started": 1795416439329,
  "stopped": {
   "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|PURR|short": 1795641133627,
