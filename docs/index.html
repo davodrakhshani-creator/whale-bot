@@ -141,6 +141,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
   <div class="tabs" role="tablist">
     <button role="tab" id="t-feed" aria-selected="true">فید</button>
     <button role="tab" id="t-wallets" aria-selected="false">سابقه‌ی نهنگ‌ها</button>
+    <button role="tab" id="t-traders" aria-selected="false">تریدرها</button>
     <button role="tab" id="t-paper" aria-selected="false">کپی مجازی</button>
     <button role="tab" id="t-hw" aria-selected="false">وین‌ریت بالا</button>
     <button role="tab" id="t-scalp" aria-selected="false">اسکلپ</button>
@@ -193,6 +194,13 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     <h2>شش اسکلپر تاییدشده (به ترتیب سود)</h2>
     <div class="list" id="sc-list"></div>
     <p class="sub">آمار از Coinversa (پوزیشن‌های کامل‌شده‌ی ۹۰ روز اخیر) در تاریخ ۲ آذر ۱۴۰۵ / ۲۴ نوامبر ۲۰۲۶. قبل از فیس و ریبیت «سود قبل از کارمزد» است. «سود» و «بدترین باخت» از همین ۹۰ روز است. وین‌ریت بالا معمولاً یعنی بردهای کوچک و باخت‌های بزرگ‌تر.</p>
+  </section>
+
+  <section class="view" id="v-traders" hidden>
+    <h2>۱۰ تریدر با کمترین درصد پوزیشنِ بازنده</h2>
+    <p class="sub" id="tr-note">در حال خواندن...</p>
+    <div class="list" id="tr-list"></div>
+    <p class="sub">درصد باخت یعنی چند درصدِ پوزیشن‌های بسته‌شده‌ی ۹۰ روز اخیر با ضرر بسته شده (کارمزد حساب شده). اندازه‌ی حساب و نهنگ بودن مهم نبود. فقط تریدرهایی که حداقل ۲۵ پوزیشن بسته دارن رتبه می‌گیرن، چون با تعداد کم، درصد باخت گول‌زنکه. این یه آمار گذشته‌ست و تضمین نیست.</p>
   </section>
 
   <section class="view" id="v-paper" hidden>
@@ -569,7 +577,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     if (loadErr) { banner.hidden = false; txt.textContent = "تازه‌سازی صفحه خطا داد (" + loadErr + "). داده‌ی قبلی نشان داده می‌شه."; }
     else if (stale) { banner.hidden = false; txt.textContent = "ربات حدود " + ago(DATA.updated).replace(" پیش", "") + " است که چیزی ننوشته (معمولاً هر نیم ساعت حداقل یک‌بار می‌نویسه). احتمالاً اجرای GitHub متوقف شده؛ از تب Actions → whale-bot می‌شه دید و با Run workflow دوباره روشنش کرد."; }
     else banner.hidden = true;
-    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۱۹";
+    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۲۰";
   }
   function renderFeed(set, feedId, flt) {
     var all = [];
@@ -709,7 +717,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
   var wsel = $("win-h"); wsel.value = String(winH); if (wsel.value !== String(winH)) { wsel.value = "24"; winH = 24; }
   wsel.addEventListener("change", function () { winH = Number(wsel.value) || 24; try { localStorage.setItem("whale-gh-win", String(winH)); } catch (e) {} renderAll(); });
   $("only-open").addEventListener("change", function () { onlyOpen = $("only-open").checked; renderAll(); });
-  var TABS = { feed: $("t-feed"), wallets: $("t-wallets"), paper: $("t-paper"), hw: $("t-hw"), scalp: $("t-scalp") }, VIEWS = { feed: $("v-feed"), wallets: $("v-wallets"), paper: $("v-paper"), hw: $("v-hw"), scalp: $("v-scalp") };
+  var TABS = { feed: $("t-feed"), wallets: $("t-wallets"), traders: $("t-traders"), paper: $("t-paper"), hw: $("t-hw"), scalp: $("t-scalp") }, VIEWS = { feed: $("v-feed"), wallets: $("v-wallets"), traders: $("v-traders"), paper: $("v-paper"), hw: $("v-hw"), scalp: $("v-scalp") };
   function show(name) { if (!TABS[name]) name = "feed"; Object.keys(TABS).forEach(function (k) { TABS[k].setAttribute("aria-selected", String(k === name)); VIEWS[k].hidden = k !== name; }); }
   Object.keys(TABS).forEach(function (k) { TABS[k].addEventListener("click", function () { show(k); try { location.hash = k; } catch (e) {} }); });
   try { show((location.hash || "").replace("#", "")); window.addEventListener("hashchange", function () { show((location.hash || "").replace("#", "")); }); } catch (e) { show("feed"); }
@@ -922,7 +930,29 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
   window.addEventListener("online", refreshNow); window.addEventListener("offline", function () { updateNet(); });
   document.addEventListener("visibilitychange", function () { if (!document.hidden) refreshNow(); });
   window.addEventListener("pageshow", function (e) { if (e.persisted) refreshNow(); });
-  updateNet(); load(); pullLive(); setInterval(pullLive, 30000); setInterval(load, 60000); setInterval(function () { if (DATA) renderAll(); }, 30000);
+  function loadTraders() {
+    var box = $("tr-list"), note = $("tr-note"); if (!box) return;
+    var nm = "traders.json?t=" + Date.now();
+    getJson(nm).catch(function () { return getJson(RAW.replace("data.json", "traders.json") + "?t=" + Date.now()); }).then(function (T) {
+      box.textContent = "";
+      var L = (T.list || []).filter(function (r) { return r.n >= T.min_n; }).slice(0, 10);
+      note.textContent = "بررسی‌شده: " + T.done + " از " + T.pool + " تریدر · آخرین به‌روزرسانی " + ago(T.updated) + (T.done < T.pool ? " (ربات هنوز داره بقیه رو می‌خونه؛ رتبه‌ها عوض می‌شه)" : "");
+      if (!L.length) { box.appendChild(el("p", "empty", "هنوز تریدری با حداقل " + T.min_n + " پوزیشن ثبت نشده؛ چند دقیقه دیگه نگاه کن.")); return; }
+      L.forEach(function (r, i) {
+        var c = el("article", "card"), r1 = el("div", "row"), a = el("a", "who", (i + 1) + ". " + r.addr.slice(0, 6) + "…" + r.addr.slice(-4)); a.href = "https://app.hyperliquid.xyz/explorer/" + r.addr; a.target = "_blank"; a.rel = "noopener"; r1.appendChild(a);
+        var days = r.last ? Math.max(0, Math.round((Date.now() - Date.parse(r.last)) / 86400000)) : null;
+        r1.appendChild(el("span", "when", days == null ? "" : (days === 0 ? "امروز فعال بوده" : days + " روز پیش آخرین فعالیت"))); c.appendChild(r1);
+        var lr = Math.round(r.lossRate * 100), h = el("div", "row"); h.appendChild(el("span", "pill " + (lr <= 10 ? "good" : lr <= 20 ? "mid" : "bad"), "درصد باخت: " + lr + "٪ (" + r.losses + " از " + r.n + " پوزیشن)")); c.appendChild(h);
+        var st = el("div", "stats"); stat(st, "سود کل ۹۰ روز", (r.pnl >= 0 ? "+" : "-") + usd(r.pnl), r.pnl >= 0 ? "up" : "down"); stat(st, "میانگین برد", usd(r.avgWin)); stat(st, "میانگین باخت", usd(r.avgLoss)); c.appendChild(st);
+        var hold = r.holdMs ? (r.holdMs < 3600000 ? Math.round(r.holdMs / 60000) + " دقیقه" : r.holdMs < 172800000 ? (r.holdMs / 3600000).toFixed(1) + " ساعت" : (r.holdMs / 86400000).toFixed(1) + " روز") : "?";
+        var info = "میانگین نگه‌داشتن پوزیشن: " + hold + " · بزرگ‌ترین باخت " + usd(r.biggestLoss) + (r.liq ? " · " + r.liq + " تصفیه" : "") + (r.coins && r.coins.length ? " · بیشتر روی " + r.coins.map(function (x) { return x.c; }).join("، ") : "");
+        c.appendChild(el("p", "sub", info));
+        if (r.payoff && r.payoff < 0.25) c.appendChild(el("p", "ai", "حواست باشه: باخت‌هاش (میانگین " + usd(r.avgLoss) + ") چند برابر بردهاشه (میانگین " + usd(r.avgWin) + "). درصد باخت کمش از اینه که برد کوچیک می‌گیره و باخت بزرگ می‌ده؛ یک باخت می‌تونه چند ده برد رو پاک کنه."));
+        box.appendChild(c);
+      });
+    }).catch(function () { box.textContent = ""; note.textContent = ""; box.appendChild(el("p", "empty", "فایل تریدرها هنوز ساخته نشده؛ ربات تا چند دقیقه‌ی دیگه می‌سازدش.")); });
+  }
+  updateNet(); load(); pullLive(); loadTraders(); setInterval(loadTraders, 600000); setInterval(pullLive, 30000); setInterval(load, 60000); setInterval(function () { if (DATA) renderAll(); }, 30000);
 })();
 </script>
 </body>

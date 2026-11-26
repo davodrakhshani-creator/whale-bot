@@ -424,6 +424,48 @@ def refresh_history(hist, cfg, now):
     return changed
 
 
+TRAD_F = os.path.join(ROOT, "traders_hist.json")
+TRAD_OUT = os.path.join(ROOT, "docs", "traders.json")
+TRAD_TTL = 24 * 3600 * 1000
+TRAD_PER_RUN = 1
+TRAD_MIN_N = 25
+
+
+def refresh_traders(now):
+    """Position-level record (last ~90 days of fills) of a pool of strong Hyperliquid wallets; the page ranks them by loss rate."""
+    cands = load(os.path.join(ROOT, "traders_candidates.json"), [])
+    th = load(TRAD_F, {"w": {}})
+    ws = th["w"]
+    due = sorted([a for a in cands if now - ws.get(a, {}).get("at", 0) > TRAD_TTL], key=lambda a: ws.get(a, {}).get("at", 0))
+    t0, changed = time.time(), False
+    for a in due[:TRAD_PER_RUN]:
+        if time.time() - t0 > 100:
+            break
+        try:
+            res = analyze(fetch_history(a, now))
+            if not res:
+                ws[a] = {"at": now, "empty": True}
+            else:
+                p, s = res["prof"], res["sum"]
+                top = sorted(res["coins"].values(), key=lambda c: -c["n"]) if False else sorted([c for c in res["coins"].values() if c["side"] == "*"], key=lambda c: -c["n"])[:3]
+                ws[a] = {"at": now, "n": p["n"], "losses": p["losses"], "lossRate": p["lossRate"], "winRate": s["winRate"], "pnl": s["totalPnl"],
+                         "avgWin": p["avgWin"], "avgLoss": p["avgLoss"], "payoff": p["payoff"], "holdMs": s["avgDurationMs"], "liq": s["liquidations"],
+                         "open": s["open"], "last": s["lastActivityAt"], "biggestLoss": s["biggestLoss"], "biggestWin": s["biggestWin"],
+                         "coins": [{"c": c["coin"], "n": c["n"], "w": c["w"]} for c in top]}
+            changed = True
+            print("trader", a[:8], (ws[a].get("n") or 0))
+        except Exception as e:
+            print("trader failed", a[:8], e, file=sys.stderr)
+    if changed or not os.path.exists(TRAD_OUT):
+        rows = [{"addr": a, **v} for a, v in ws.items() if v.get("n")]
+        rows.sort(key=lambda r: (r["n"] < TRAD_MIN_N, r["lossRate"], -r["n"]))
+        out = {"updated": now, "min_n": TRAD_MIN_N, "pool": len(cands), "done": len(rows), "list": rows[:30]}
+        with open(TRAD_OUT, "w") as f:
+            json.dump(out, f, ensure_ascii=False)
+        with open(TRAD_F, "w") as f:
+            json.dump(th, f, ensure_ascii=False)
+
+
 def fetch_orders(addr):
     """Whale's open stop / take-profit style orders (public). Only reduce-only or trigger orders on perps."""
     out = []
@@ -602,6 +644,10 @@ def main():
             if unreal(p, m) <= lim:
                 st.setdefault("stopped", {})[key] = now
                 close_paper(st, key, m, now, "stop")
+    try:
+        refresh_traders(now)
+    except Exception as e:
+        print("traders failed", e, file=sys.stderr)
     if refresh_history(hist, cfg, now):
         with open(HIST_F, "w", encoding="utf-8") as f:
             json.dump(hist, f, ensure_ascii=False)
