@@ -197,10 +197,10 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
   </section>
 
   <section class="view" id="v-traders" hidden>
-    <h2>۱۰ تریدر با کمترین درصد پوزیشنِ بازنده</h2>
+    <h2>۱۰ تریدرِ کوچک (غیرنهنگ) با بهترین وین‌ریت</h2>
     <p class="sub" id="tr-note">در حال خواندن...</p>
     <div class="list" id="tr-list"></div>
-    <p class="sub">درصد باخت یعنی چند درصدِ پوزیشن‌های بسته‌شده‌ی ۹۰ روز اخیر با ضرر بسته شده (کارمزد حساب شده). اندازه‌ی حساب و نهنگ بودن مهم نبود. فقط تریدرهایی که حداقل ۲۵ پوزیشن بسته دارن رتبه می‌گیرن، چون با تعداد کم، درصد باخت گول‌زنکه. این یه آمار گذشته‌ست و تضمین نیست.</p>
+    <p class="sub">درصد باخت یعنی چند درصدِ پوزیشن‌های بسته‌شده‌ی ۹۰ روز اخیر با ضرر بسته شده (کارمزد حساب شده). این کیف‌پول‌ها از دسته‌ی حساب‌های کوچک (نهنگ نیستن) و فعال‌ان. رتبه‌بندی با درصد باخت تعدیل‌شده انجام می‌شه (تعداد پوزیشن کم، رتبه رو بالا نمی‌بره). فقط تریدرهایی که حداقل ۲۵ پوزیشن بسته دارن رتبه می‌گیرن، چون با تعداد کم، درصد باخت گول‌زنکه. این یه آمار گذشته‌ست و تضمین نیست.</p>
   </section>
 
   <section class="view" id="v-paper" hidden>
@@ -577,7 +577,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     if (loadErr) { banner.hidden = false; txt.textContent = "تازه‌سازی صفحه خطا داد (" + loadErr + "). داده‌ی قبلی نشان داده می‌شه."; }
     else if (stale) { banner.hidden = false; txt.textContent = "ربات حدود " + ago(DATA.updated).replace(" پیش", "") + " است که چیزی ننوشته (معمولاً هر نیم ساعت حداقل یک‌بار می‌نویسه). احتمالاً اجرای GitHub متوقف شده؛ از تب Actions → whale-bot می‌شه دید و با Run workflow دوباره روشنش کرد."; }
     else banner.hidden = true;
-    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۲۲";
+    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۲۳";
   }
   function renderFeed(set, feedId, flt) {
     var all = [];

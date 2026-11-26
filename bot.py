@@ -458,7 +458,7 @@ def refresh_traders(now):
             print("trader failed", a[:8], e, file=sys.stderr)
     if changed or not os.path.exists(TRAD_OUT):
         rows = [{"addr": a, **v} for a, v in ws.items() if v.get("n")]
-        rows.sort(key=lambda r: (r["n"] < TRAD_MIN_N, r["lossRate"], -r["n"]))
+        rows.sort(key=lambda r: (r["n"] < TRAD_MIN_N, (r["losses"] + 2.4) / (r["n"] + 6), -r["n"]))  # shrunk loss rate: few positions can't jump to the top
         out = {"updated": now, "min_n": TRAD_MIN_N, "pool": len(cands), "done": len(rows), "list": rows[:30]}
         with open(TRAD_OUT, "w") as f:
             json.dump(out, f, ensure_ascii=False)
