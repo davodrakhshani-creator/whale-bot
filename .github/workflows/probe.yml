@@ -1,0 +1,20 @@
+name: probe
+on: workflow_dispatch
+jobs:
+  p:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          python3 - <<'PY'
+          import time, bot
+          now = int(time.time()*1000)
+          for a in ["0x9dac116b0f57fdb4c68ab1b485e84e048a0f0b55","0x286b534a51d5dab251746f369bb31126631e316d","0x6495d18278904b163a8a030124b41f4da84e9652"]:
+              f = bot.fetch_history(a, now)
+              lcs, nopen = bot.lifecycles(f)
+              print(a[:8], "fills", len(f), "lifecycles", len(lcs), "open", nopen)
+              if f:
+                  print(" first", f[0].get("time"), f[0].get("coin"), f[0].get("dir"), f[0].get("startPosition"), "last", max(int(x["time"]) for x in f))
+              r = bot.analyze(f)
+              print(" analyze", None if not r else r["prof"]["n"])
+          PY
