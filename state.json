@@ -1,5 +1,5 @@
 {
- "balance": 1063.8663964265704,
+ "balance": 1048.3353530836714,
  "open": {
   "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|PUMP|short": {
    "key": "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|PUMP|short",
@@ -219,20 +219,6 @@
    "lev": 5,
    "opened_at": 1795626610607,
    "whale_usd": 5889.2844
-  },
-  "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9|xyz:SKHY|short": {
-   "key": "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9|xyz:SKHY|short",
-   "tag": "a70a",
-   "group": "طلا",
-   "coin": "xyz:SKHY",
-   "src": "xyz:SKHY",
-   "side": "short",
-   "entry": 106.837939,
-   "whale_px": 106.77353353391477,
-   "margin": 50,
-   "lev": 5,
-   "opened_at": 1795628563750,
-   "whale_usd": 56071.053400000004
   },
   "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9|ETH|short": {
    "key": "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9|ETH|short",
@@ -1258,6 +1244,24 @@
    "pnl": 13.862684521964868,
    "closed_at": 1795652199318,
    "reason": "whale"
+  },
+  {
+   "key": "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9|xyz:SKHY|short",
+   "tag": "a70a",
+   "group": "طلا",
+   "coin": "xyz:SKHY",
+   "src": "xyz:SKHY",
+   "side": "short",
+   "entry": 106.837939,
+   "whale_px": 106.77353353391477,
+   "margin": 50,
+   "lev": 5,
+   "opened_at": 1795628563750,
+   "whale_usd": 56071.053400000004,
+   "exit": 113.3790035,
+   "pnl": -15.53104334289898,
+   "closed_at": 1795652504247,
+   "reason": "stop"
   }
  ],
  "pending": {
@@ -1293,13 +1297,9 @@
   "0x7256bdc5b2dce2600f79b1fd1469e80357936e98": 1795413632500,
   "0xbd8a4f1170abd4fcb3422d60ea1d005eb2bddcf1": 1795514744136,
   "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9": 1795652272640,
-  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37": 1795652388810
+  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37": 1795652472975
  },
  "events": [
-  {
-   "t": 1795591443222,
-   "text": "کپی مجازی باز شد: c191 GRAM لانگ ورود 0.925157 (حجم نهنگ ~$4,642)"
-  },
   {
    "t": 1795592204300,
    "text": "کپی مجازی باز شد: c191 ETH لانگ ورود 1636.14 (حجم نهنگ ~$13,989)"
@@ -2095,11 +2095,16 @@
   {
    "t": 1795652199318,
    "text": "c191 باز کرد SOL short (~$3,942) ولی مارجین آزاد کافی نبود (آزاد 49$، لازم 50$)"
+  },
+  {
+   "t": 1795652504247,
+   "text": "کپی مجازی بسته شد (استاپ): a70a xyz:SKHY شورت سود/زیان -15.53$"
   }
  ],
- "data_ts": 1795652397068,
+ "data_ts": 1795652504247,
  "started": 1795416439329,
  "stopped": {
-  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|PURR|short": 1795641133627
+  "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|PURR|short": 1795641133627,
+  "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9|xyz:SKHY|short": 1795652504247
  }
 }
