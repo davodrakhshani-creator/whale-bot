@@ -427,7 +427,7 @@ def refresh_history(hist, cfg, now):
 TRAD_F = os.path.join(ROOT, "traders_hist.json")
 TRAD_OUT = os.path.join(ROOT, "docs", "traders.json")
 TRAD_TTL = 24 * 3600 * 1000
-TRAD_PER_RUN = 1
+TRAD_PER_RUN = 2
 TRAD_MIN_N = 25
 
 
