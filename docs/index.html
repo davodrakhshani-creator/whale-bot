@@ -143,7 +143,6 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     <button role="tab" id="t-wallets" aria-selected="false">سابقه‌ی نهنگ‌ها</button>
     <button role="tab" id="t-paper" aria-selected="false">کپی مجازی</button>
     <button role="tab" id="t-hw" aria-selected="false">وین‌ریت بالا</button>
-    <button role="tab" id="t-gold" aria-selected="false">طلا</button>
     <button role="tab" id="t-scalp" aria-selected="false">اسکلپ</button>
   </div>
 
@@ -185,14 +184,6 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     <p class="sub" id="hw-note"></p>
   </section>
 
-  <section class="view" id="v-gold" hidden>
-    <div class="banner"><span>نتیجه‌ی بررسی طلا (xyz:GOLD): کیف‌پولی با «وین‌ریت خیلی بالا + نمونه‌ی زیاد + سود قابل قبول» در طلا پیدا نکردم. بیشتر معامله‌گرهای طلا ربات‌های کوچکِ هم‌زمان هستند: چند کیف‌پول همین الان دقیقاً در یک ثانیه پوزیشن می‌بندند و باز می‌کنند، یعنی یک سیگنالِ مشترک هستن، نه نظرِ مستقل همه‌شان. دو نفری که با داده بیشتر بررسی شدند این‌جا زنده دنبال می‌شن: a70a (سویینگ، ۵۸٪، سود حدود ۲۵ هزار دلار) و c191 (۷۰٪، ولی دو باخت بزرگ‌تر از بیشتر بردها). وین‌ریتها از چند ده پوزیشن محاسبه شده و قطعی نیستند.</span></div>
-    <h2>حرکت‌های زنده‌ی طلا (۳ روز اخیر)</h2>
-    <p class="sub">همان نشانگرهای فید اصلی. فقط معامله‌های طلا نشون داده می‌شه.</p>
-    <div class="feed" id="gold-feed" aria-live="polite"></div>
-    <h2>سابقه و نقطه‌ضعف‌ها</h2>
-    <div class="list" id="gold-wallets"></div>
-  </section>
 
   <section class="view" id="v-scalp" hidden>
     <div class="banner"><span>فقط اسکلپرهایی که هر سه شرط را دارند: ۱) وین‌ریتِ پوزیشن بالای ۶۰٪، ۲) سود کلِ ۹۰ روز خیلی مثبت (حداقل چند ده هزار دلار) و ۳) میانگین نگه‌داری کمتر از ۱۵ دقیقه، با حداقل ۵۰۰ پوزیشن. همه‌ی ۹۵ کیف‌پولی که امروز اسکلپ کرده بودند را بررسی کردم و این شش تا ماندند. بقیه یا سود منفی داشتند، یا سود کم (مثل b040 که خالص فقط حدود ۱٬۰۰۰ دلار بود)، یا نمونه‌ی کوچک. این فقط از بین کیف‌پول‌هایی است که امروز در ساعت‌های اخیر دیده شدند؛ اسکلپرهای ساکتِ امروز را ندیدم.</span></div>
@@ -561,10 +552,9 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     var wf = Date.now() - winH * 3600000;
     renderFeed(SETS.whale.concat(SETS.gold, SETS.hw), "feed", function (g) { return g.usd >= minUsd && g.last >= wf && (!onlyOpen || isOpenDir(g.dir)); });
     renderFeed(SETS.hw, "hw-feed", function () { return true; });
-    renderFeed(SETS.gold, "gold-feed", function (g) { return /gold/i.test(g.coin); });
     renderFeed(SETS.scalp, "scalp-feed", function (g) { return isOpenDir(g.dir) && g.last >= Date.now() - 30 * 60000; });
     renderScalpers();
-    renderWallets(SETS.whale, "wallets"); renderWallets(SETS.hw, "hw-wallets"); renderWallets(SETS.gold, "gold-wallets"); renderLedger(); updateNet();
+    renderWallets(SETS.whale, "wallets"); renderWallets(SETS.hw, "hw-wallets"); renderLedger(); updateNet();
   }
   function renderBanner() {
     var strip = $("strip"), banner = $("banner"), txt = $("banner-text"); strip.textContent = "";
@@ -717,7 +707,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
   var wsel = $("win-h"); wsel.value = String(winH); if (wsel.value !== String(winH)) { wsel.value = "24"; winH = 24; }
   wsel.addEventListener("change", function () { winH = Number(wsel.value) || 24; try { localStorage.setItem("whale-gh-win", String(winH)); } catch (e) {} renderAll(); });
   $("only-open").addEventListener("change", function () { onlyOpen = $("only-open").checked; renderAll(); });
-  var TABS = { feed: $("t-feed"), wallets: $("t-wallets"), paper: $("t-paper"), hw: $("t-hw"), gold: $("t-gold"), scalp: $("t-scalp") }, VIEWS = { feed: $("v-feed"), wallets: $("v-wallets"), paper: $("v-paper"), hw: $("v-hw"), gold: $("v-gold"), scalp: $("v-scalp") };
+  var TABS = { feed: $("t-feed"), wallets: $("t-wallets"), paper: $("t-paper"), hw: $("t-hw"), scalp: $("t-scalp") }, VIEWS = { feed: $("v-feed"), wallets: $("v-wallets"), paper: $("v-paper"), hw: $("v-hw"), scalp: $("v-scalp") };
   function show(name) { if (!TABS[name]) name = "feed"; Object.keys(TABS).forEach(function (k) { TABS[k].setAttribute("aria-selected", String(k === name)); VIEWS[k].hidden = k !== name; }); }
   Object.keys(TABS).forEach(function (k) { TABS[k].addEventListener("click", function () { show(k); try { location.hash = k; } catch (e) {} }); });
   try { show((location.hash || "").replace("#", "")); window.addEventListener("hashchange", function () { show((location.hash || "").replace("#", "")); }); } catch (e) { show("feed"); }

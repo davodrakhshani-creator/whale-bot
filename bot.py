@@ -210,7 +210,7 @@ def close_paper(st, key, px, now, reason):
     st["balance"] += pnl
     st["closed"].append({**pos, "exit": ex, "pnl": pnl, "closed_at": now, "reason": reason})
     st["closed"] = st["closed"][-300:]
-    why = {"whale": "نهنگ بست", "liq": "تصفیه", "stop": "استاپ"}.get(reason, reason)
+    why = {"whale": "نهنگ بست", "liq": "تصفیه", "stop": "استاپ", "removed": "نهنگ از لیست حذف شد"}.get(reason, reason)
     log(st, now, f"کپی مجازی بسته شد ({why}): {pos['tag']} {pos['coin']} {'لانگ' if pos['side'] == 'long' else 'شورت'} سود/زیان {pnl:+.2f}$")
 
 
@@ -549,6 +549,10 @@ def main():
     RISK_HIST.update(hist.get("wallets", {}))
     prev = load(DATA_F, None)
     marks = marks_now()
+    live = {w["addr"] for w in cfg["wallets"]}
+    for k in [k for k in st["open"] if k.split("|")[0] not in live]:  # wallet removed from config: close its paper copies at the current price
+        p = st["open"][k]
+        close_paper(st, k, marks.get(p["coin"]) or p["entry"], now, "removed")
     feeds, ords, fat, nfull = {}, {}, {}, 0
     oldw = {w["addr"]: w for w in (prev or {}).get("wallets", [])}
     for w in cfg["wallets"]:
