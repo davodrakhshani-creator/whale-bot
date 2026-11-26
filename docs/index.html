@@ -134,16 +134,16 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
   </header>
 
   <div class="row" id="netbar">
-    <button class="btn primary" id="refresh" type="button">ریفرش</button>
+    <button class="btn primary" id="refresh" type="button">Refresh</button>
     <span class="chip" id="net"><i></i><span id="net-t">...</span></span>
   </div>
 
   <div class="tabs" role="tablist">
-    <button role="tab" id="t-feed" aria-selected="true">فید</button>
+    <button role="tab" id="t-feed" aria-selected="true">پوزیشن</button>
     <button role="tab" id="t-wallets" aria-selected="false">سابقه‌ی نهنگ‌ها</button>
-    <button role="tab" id="t-traders" aria-selected="false">تریدرها</button>
-    <button role="tab" id="t-paper" aria-selected="false">کپی مجازی</button>
-    <button role="tab" id="t-hw" aria-selected="false">وین‌ریت بالا</button>
+    <button role="tab" id="t-traders" aria-selected="false">سابقه تریدرها جدید</button>
+    <button role="tab" id="t-paper" aria-selected="false">والت</button>
+    <button role="tab" id="t-hw" aria-selected="false">تریدرهای وین‌ریت بالا</button>
     <button role="tab" id="t-scalp" aria-selected="false">اسکلپ</button>
   </div>
 
@@ -379,9 +379,9 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     return Promise.all(jobs).then(function () { if (DATA) renderAll(); });
   }
   function refreshNow() {
-    var btn = $("refresh"); btn.disabled = true; btn.textContent = "در حال ریفرش...";
+    var btn = $("refresh"); btn.disabled = true; btn.textContent = "Refreshing...";
     $("net-t").textContent = "در حال اتصال...";
-    return Promise.all([load(), pullLive()]).then(function () { btn.disabled = false; btn.textContent = "ریفرش"; updateNet(); });
+    return Promise.all([load(), pullLive()]).then(function () { btn.disabled = false; btn.textContent = "Refresh"; updateNet(); });
   }
 
   function copiedBy(g) {
@@ -577,7 +577,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     if (loadErr) { banner.hidden = false; txt.textContent = "تازه‌سازی صفحه خطا داد (" + loadErr + "). داده‌ی قبلی نشان داده می‌شه."; }
     else if (stale) { banner.hidden = false; txt.textContent = "ربات حدود " + ago(DATA.updated).replace(" پیش", "") + " است که چیزی ننوشته (معمولاً هر نیم ساعت حداقل یک‌بار می‌نویسه). احتمالاً اجرای GitHub متوقف شده؛ از تب Actions → whale-bot می‌شه دید و با Run workflow دوباره روشنش کرد."; }
     else banner.hidden = true;
-    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۲۰";
+    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۲۱";
   }
   function renderFeed(set, feedId, flt) {
     var all = [];
