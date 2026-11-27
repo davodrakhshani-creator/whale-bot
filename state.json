@@ -1,5 +1,5 @@
 {
- "balance": 1108.799268238185,
+ "balance": 1093.4099283195708,
  "open": {
   "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|PUMP|short": {
    "key": "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|PUMP|short",
@@ -107,20 +107,6 @@
    "lev": 5,
    "opened_at": 1795576554047,
    "whale_usd": 4113.846600000001
-  },
-  "0x9aa589355bf745db9784c8ef3c646360f11b58af|xyz:SILVER|short": {
-   "key": "0x9aa589355bf745db9784c8ef3c646360f11b58af|xyz:SILVER|short",
-   "tag": "9aa5",
-   "group": "نهنگ",
-   "coin": "xyz:SILVER",
-   "src": "xyz:SILVER",
-   "side": "short",
-   "entry": 40.16544675,
-   "whale_px": 40.179,
-   "margin": 50,
-   "lev": 5,
-   "opened_at": 1795594997402,
-   "whale_usd": 5719.882440000001
   },
   "0x9aa589355bf745db9784c8ef3c646360f11b58af|xyz:CRCL|long": {
    "key": "0x9aa589355bf745db9784c8ef3c646360f11b58af|xyz:CRCL|long",
@@ -1541,6 +1527,24 @@
    "pnl": 1.1132403764108183,
    "closed_at": 1795737787724,
    "reason": "whale"
+  },
+  {
+   "key": "0x9aa589355bf745db9784c8ef3c646360f11b58af|xyz:SILVER|short",
+   "tag": "9aa5",
+   "group": "نهنگ",
+   "coin": "xyz:SILVER",
+   "src": "xyz:SILVER",
+   "side": "short",
+   "entry": 40.16544675,
+   "whale_px": 40.179,
+   "margin": 50,
+   "lev": 5,
+   "opened_at": 1795594997402,
+   "whale_usd": 5719.882440000001,
+   "exit": 42.601776699999995,
+   "pnl": -15.389339918614212,
+   "closed_at": 1795744765496,
+   "reason": "stop"
   }
  ],
  "pending": {
@@ -1564,10 +1568,6 @@
   "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37": 1795658730037
  },
  "events": [
-  {
-   "t": 1795613505405,
-   "text": "c191 باز کرد xyz:MU short (~$2,804) ولی مارجین آزاد کافی نبود (آزاد 28$، لازم 50$)"
-  },
   {
    "t": 1795613539712,
    "text": "c191 xyz:ORCL را بست و فقط بخش کوچکی (937$) در جهت مخالف ماند؛ شورت/لانگ جدید کپی نشد"
@@ -2363,12 +2363,17 @@
   {
    "t": 1795737788804,
    "text": "کپی مجازی باز شد: 9aa5 xyz:SKHX شورت ورود 782.77 (حجم نهنگ ~$6,830)"
+  },
+  {
+   "t": 1795744765496,
+   "text": "کپی مجازی بسته شد (استاپ): 9aa5 xyz:SILVER شورت سود/زیان -15.39$"
   }
  ],
- "data_ts": 1795744337313,
+ "data_ts": 1795744765496,
  "started": 1795416439329,
  "stopped": {
   "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|PURR|short": 1795641133627,
-  "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9|xyz:SKHY|short": 1795652504247
+  "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9|xyz:SKHY|short": 1795652504247,
+  "0x9aa589355bf745db9784c8ef3c646360f11b58af|xyz:SILVER|short": 1795744765496
  }
 }
