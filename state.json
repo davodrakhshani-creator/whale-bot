@@ -1,5 +1,5 @@
 {
- "balance": 1242.8636501907274,
+ "balance": 1253.7981828894863,
  "open": {
   "0xf382f419448b471da26225c4f849bb240be5578c|HYPE|long": {
    "key": "0xf382f419448b471da26225c4f849bb240be5578c|HYPE|long",
@@ -14,21 +14,6 @@
    "lev": 5,
    "opened_at": 1795747054702,
    "whale_usd": 22662.29725,
-   "ai": null
-  },
-  "0x9aa589355bf745db9784c8ef3c646360f11b58af|ZEC|short": {
-   "key": "0x9aa589355bf745db9784c8ef3c646360f11b58af|ZEC|short",
-   "tag": "9aa5",
-   "group": "نهنگ",
-   "coin": "ZEC",
-   "src": "ZEC",
-   "side": "short",
-   "entry": 760.8666715,
-   "whale_px": 761.5,
-   "margin": 50,
-   "lev": 5,
-   "opened_at": 1795758427985,
-   "whale_usd": 3046.0,
    "ai": null
   },
   "0xf382f419448b471da26225c4f849bb240be5578c|BTC|long": {
@@ -1938,6 +1923,25 @@
    "pnl": 6.798502333450823,
    "closed_at": 1795820466781,
    "reason": "manual"
+  },
+  {
+   "key": "0x9aa589355bf745db9784c8ef3c646360f11b58af|ZEC|short",
+   "tag": "9aa5",
+   "group": "نهنگ",
+   "coin": "ZEC",
+   "src": "ZEC",
+   "side": "short",
+   "entry": 760.8666715,
+   "whale_px": 761.5,
+   "margin": 50,
+   "lev": 5,
+   "opened_at": 1795758427985,
+   "whale_usd": 3046.0,
+   "ai": null,
+   "exit": 726.9030055,
+   "pnl": 10.934532698758806,
+   "closed_at": 1795821399026,
+   "reason": "manual"
   }
  ],
  "pending": {
@@ -1964,10 +1968,6 @@
   "0xf3297d354b7a8c594a54154c7dc03d924b6c87c9": 1795759280478
  },
  "events": [
-  {
-   "t": 1795624631027,
-   "text": "c191 xyz:GOLD را بست و فقط بخش کوچکی (1,268$) در جهت مخالف ماند؛ شورت/لانگ جدید کپی نشد"
-  },
   {
    "t": 1795624637203,
    "text": "کپی مجازی بسته شد (نهنگ بست): c191 BTC شورت سود/زیان -0.39$"
@@ -2763,9 +2763,13 @@
   {
    "t": 1795820466781,
    "text": "کپی مجازی بسته شد (دستی؛ تو بستی): c6aa BTC شورت سود/زیان +6.80$"
+  },
+  {
+   "t": 1795821399026,
+   "text": "کپی مجازی بسته شد (دستی؛ تو بستی): 9aa5 ZEC شورت سود/زیان +10.93$"
   }
  ],
- "data_ts": 1795820466781,
+ "data_ts": 1795821399026,
  "started": 1795416439329,
  "stopped": {
   "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|PURR|short": 1795641133627,
@@ -2791,10 +2795,11 @@
   "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|AAVE|short": 1795820466781,
   "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|AERO|short": 1795820466781,
   "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|TRX|short": 1795820466781,
-  "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|BTC|short": 1795820466781
+  "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|BTC|short": 1795820466781,
+  "0x9aa589355bf745db9784c8ef3c646360f11b58af|ZEC|short": 1795821399026
  },
  "relay_done": [
   "C723A688wiCA"
  ],
- "close_batch_done": "2026-11-28-a"
+ "close_batch_done": "2026-11-28-b"
 }
