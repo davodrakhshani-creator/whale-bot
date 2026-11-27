@@ -208,7 +208,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
       <div class="row"><span class="sub">موجودی مجازی (با سود باز)</span><span class="sub" id="p-day"></span></div>
       <div class="big num" id="p-eq">$1,000.00</div>
       <div class="goalbar" aria-hidden="true"><i id="p-bar"></i></div>
-      <div class="row sub"><span>شروع <span class="num">$1,000</span></span><span id="p-pct"></span><span>هدف <span class="num">$1,500</span></span></div>
+      <div class="row sub"><span>شروع <span class="num">$1,000</span></span><span id="p-pct"></span><span>هدف <span class="num">$10,000</span></span></div>
       <div class="grid2" id="p-stats"></div>
     </div>
     <div class="card">
@@ -228,7 +228,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
 </div>
 <script>
 (function () {
-  var START = 1000, GOAL = 1500, DATA = null, W = {}, SETS = { whale: [], hw: [], gold: [], scalp: [] }, WALLETS = [];
+  var START = 1000, GOAL = 10000, DATA = null, W = {}, SETS = { whale: [], hw: [], gold: [], scalp: [] }, WALLETS = [];
   var seen = {}, newAt = {}, aiOpen = {}, marks = {}, firstLoad = true, loadErr = null;
   var minUsd = 500, winH = 24, onlyOpen = false, touching = false, pending = false;
   var BC = {}; try { BC = JSON.parse(localStorage.getItem("whale-gh-botclose") || "{}") || {}; } catch (e) { BC = {}; }
@@ -579,7 +579,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     if (loadErr) { banner.hidden = false; txt.textContent = "تازه‌سازی صفحه خطا داد (" + loadErr + "). داده‌ی قبلی نشان داده می‌شه."; }
     else if (stale) { banner.hidden = false; txt.textContent = "ربات حدود " + ago(DATA.updated).replace(" پیش", "") + " است که چیزی ننوشته (معمولاً هر نیم ساعت حداقل یک‌بار می‌نویسه). احتمالاً اجرای GitHub متوقف شده؛ از تب Actions → whale-bot می‌شه دید و با Run workflow دوباره روشنش کرد."; }
     else banner.hidden = true;
-    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۲۸";
+    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۲۹";
   }
   function renderFeed(set, feedId, flt) {
     var all = [];
@@ -683,7 +683,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     if (!DATA) return;
     var eq = DATA.equity, pct = clamp((eq - START) / (GOAL - START)) * 100, S = DATA.settings;
     $("p-eq").textContent = money(eq); $("p-bar").style.width = pct.toFixed(1) + "%"; $("p-pct").textContent = pct.toFixed(0) + "٪ از مسیر هدف";
-    $("p-day").textContent = "روز " + Math.min(30, Math.floor((Date.now() - (DATA.started || Date.now())) / 86400000) + 1) + " از ۳۰";
+    $("p-day").textContent = "روز " + Math.floor((Date.now() - (DATA.started || Date.now())) / 86400000) + 1;
     var ps = $("p-stats"); ps.textContent = "";
     var closed = DATA.closed || [], wins = closed.filter(function (t) { return t.pnl > 0; }).length, used = (DATA.open || []).reduce(function (s, p) { return s + p.margin; }, 0);
     stat(ps, "بسته‌شده (۶۰ تای آخر)", String(closed.length)); stat(ps, "وین‌ریت", closed.length ? Math.round(100 * wins / closed.length) + "٪" : "—");
