@@ -272,7 +272,7 @@ def process_wallet(st, cfg, w, fills, marks, now):
     for pk in [k for k, p in st["pending"].items() if k.startswith(addr + "|")]:
         p = st["pending"][pk]
         _, coin, side = pk.split("|")
-        if p["usd"] >= cfg["settings"]["min_usd"]:
+        if p["usd"] >= w.get("min_usd", cfg["settings"]["min_usd"]):
             open_paper(st, cfg, w, coin, side, p["usd"] / p["size"], p["usd"], p["last"], marks)
             del st["pending"][pk]
         elif now - p["last"] > PENDING_TTL:

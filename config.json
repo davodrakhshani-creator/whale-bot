@@ -86,6 +86,24 @@
       "group": "اسکلپ",
       "copy": false,
       "hist": false
+    },
+    {
+      "addr": "0xa3b7226dea54ab25133e1e80fbf22adefa917ade",
+      "tag": "a3b7",
+      "group": "تریدر جدید",
+      "min_usd": 500
+    },
+    {
+      "addr": "0x13639fb4a6ba5de085420b998493cc1b6911e5aa",
+      "tag": "1363",
+      "group": "تریدر جدید",
+      "min_usd": 500
+    },
+    {
+      "addr": "0xf3297d354b7a8c594a54154c7dc03d924b6c87c9",
+      "tag": "f329",
+      "group": "تریدر جدید",
+      "min_usd": 500
     }
   ],
   "settings": {
