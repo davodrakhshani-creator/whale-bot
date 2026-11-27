@@ -124,10 +124,9 @@
     "new_trader_reserve": 150,
     "relay_topic": "wb-a234e11bd6f83bf99981",
     "close_batch": {
-      "id": "2026-11-28-a",
+      "id": "2026-11-28-b",
       "keep": [
         "0xf382f419448b471da26225c4f849bb240be5578c|HYPE|long",
-        "0x9aa589355bf745db9784c8ef3c646360f11b58af|ZEC|short",
         "0xf382f419448b471da26225c4f849bb240be5578c|BTC|long",
         "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|ONDO|short"
       ]
