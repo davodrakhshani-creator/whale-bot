@@ -176,6 +176,7 @@ def open_paper(st, cfg, w, coin, side, avg_px, usd, now, marks, first=None):
         log(st, now, f"پله‌ی جدید: {w['tag']} به {pos['coin']} {'لانگ' if side == 'long' else 'شورت'} اضافه کرد (~${usd:,.0f}) ← ما هم {add_m:,.0f}$ اضافه کردیم؛ پله {pos['steps']}، مارجین کل {tot:,.0f}$، میانگین ورود {pos['entry']:.6g}")
         return
     if key in st.setdefault("stopped", {}):
+        log_once(st, now, f"{w['tag']} باز کرد {coin} {'لانگ' if side == 'long' else 'شورت'} (~${usd:,.0f}) ولی این پوزیشن قبلاً بسته/استاپ شده بود؛ تا خروج کامل نهنگ دوباره کپی نمی‌شه")
         return  # stopped out earlier; wait until the whale is flat before copying this coin+side again
     inst, margin, lev = coin, S["margin"], S["leverage"]
     if is_gold(coin):

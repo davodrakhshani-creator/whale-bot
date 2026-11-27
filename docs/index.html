@@ -401,7 +401,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     if (held && isOpenDir(g.dir)) return "ربات این پوزیشن رو داره و نهنگ بهش اضافه کرده ← ربات خودش پله‌ی جدید اضافه می‌کنه (تا ۴ پله، هر پله $50)؛ اگه هنوز نیومده، چند دقیقه صبر کن";
     if (W[g.addr] && W[g.addr].w.group === "اسکلپ") return "اسکلپ‌ها فقط نمایشی‌اند؛ ربات کپی‌شان نمی‌کند";
     var ev = (DATA.events || []).filter(function (e) { return e.text.indexOf(g.tag + " باز کرد " + g.coin) === 0 && Math.abs(e.t - g.last) < 3600000; })[0];
-    if (ev) return /سقف|جا یا/.test(ev.text) ? "ربات کپی نکرد: سقف پوزیشن باز پر بود" : "ربات کپی نکرد: موجودی آزاد کافی نبود";
+    if (ev) if (/قبلاً بسته/.test(ev.text)) return "ربات کپی نکرد: این کوین/جهت رو قبلاً بستی یا استاپ خورده؛ تا نهنگ کامل خارج نشه دوباره کپی نمی‌شه"; return /سقف|جا یا/.test(ev.text) ? "ربات کپی نکرد: سقف پوزیشن باز پر بود" : "ربات کپی نکرد: موجودی آزاد کافی نبود";
     var cr = (DATA.events || []).filter(function (e) { return e.text.indexOf(g.tag + " " + g.coin + " را بست و فقط") === 0 && Math.abs(e.t - g.last) < 3600000; })[0];
     if (cr) return "ربات کپی نکرد: نهنگ تقریباً فقط بست و خرده‌پوزیشن مخالف ماند";
     if (Date.now() - g.last < 15 * 60000) return "ربات هنوز این حرکت را پردازش نکرده؛ معمولاً ۱ تا ۲ دقیقه طول می‌کشد";
@@ -584,7 +584,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     if (loadErr) { banner.hidden = false; txt.textContent = "تازه‌سازی صفحه خطا داد (" + loadErr + "). داده‌ی قبلی نشان داده می‌شه."; }
     else if (stale) { banner.hidden = false; txt.textContent = "ربات حدود " + ago(DATA.updated).replace(" پیش", "") + " است که چیزی ننوشته (معمولاً هر نیم ساعت حداقل یک‌بار می‌نویسه). احتمالاً اجرای GitHub متوقف شده؛ از تب Actions → whale-bot می‌شه دید و با Run workflow دوباره روشنش کرد."; }
     else banner.hidden = true;
-    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۳۶";
+    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۳۷";
   }
   function renderFeed(set, feedId, flt) {
     var all = [];
