@@ -197,7 +197,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
   </section>
 
   <section class="view" id="v-traders" hidden>
-    <h2>۱۰ تریدرِ کوچک (غیرنهنگ) با بهترین وین‌ریت</h2>
+    <h2>۳ تریدر منتخب برای کپی (از ۱۰ تای برتر)</h2>
     <p class="sub" id="tr-note">در حال خواندن...</p>
     <div class="list" id="tr-list"></div>
     <p class="sub">درصد باخت یعنی چند درصدِ پوزیشن‌های بسته‌شده‌ی ۹۰ روز اخیر با ضرر بسته شده (کارمزد حساب شده). این کیف‌پول‌ها از دسته‌ی حساب‌های کوچک (نهنگ نیستن) و فعال‌ان. رتبه‌بندی با درصد باخت تعدیل‌شده انجام می‌شه (تعداد پوزیشن کم، رتبه رو بالا نمی‌بره). فقط تریدرهایی که حداقل ۲۵ پوزیشن بسته دارن رتبه می‌گیرن، چون با تعداد کم، درصد باخت گول‌زنکه. این یه آمار گذشته‌ست و تضمین نیست.</p>
@@ -579,7 +579,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     if (loadErr) { banner.hidden = false; txt.textContent = "تازه‌سازی صفحه خطا داد (" + loadErr + "). داده‌ی قبلی نشان داده می‌شه."; }
     else if (stale) { banner.hidden = false; txt.textContent = "ربات حدود " + ago(DATA.updated).replace(" پیش", "") + " است که چیزی ننوشته (معمولاً هر نیم ساعت حداقل یک‌بار می‌نویسه). احتمالاً اجرای GitHub متوقف شده؛ از تب Actions → whale-bot می‌شه دید و با Run workflow دوباره روشنش کرد."; }
     else banner.hidden = true;
-    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۲۷";
+    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۲۸";
   }
   function renderFeed(set, feedId, flt) {
     var all = [];
@@ -998,14 +998,14 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     getJson(nm).catch(function () { return getJson(RAW.replace("data.json", "traders.json") + "?t=" + Date.now()); }).then(function (T) {
       (T.list || []).forEach(function (r) { TRM[r.addr.toLowerCase()] = r; }); try { renderAll(); } catch (e) {}
       box.textContent = "";
-      var L = (T.list || []).filter(function (r) { return r.n >= T.min_n; }).slice(0, 10); var SELF = {}; ((DATA && DATA.wallets) || []).forEach(function (w) { if (w.group === "تریدر جدید") SELF[w.addr.toLowerCase()] = 1; }); var WHY = { d839: "پوزیشن‌هاش چند دقیقه‌ست؛ تأخیر ربات کل سودش رو می‌خوره و ۸ روزه فعال نیست", "6d6d": "اسکالپره (۱۶ دقیقه) و ۸ روزه فعال نیست", "0526": "میانگین برد فقط ۳$؛ سودش بی‌معنیه و از اکتبر فعال نیست", "107a": "یک باخت ۶۲ هزار دلاری داشته", e933: "روی بازارهای پیش‌بینی (#…) کار می‌کنه که کپی‌شدنی نیست", "4faf": "پوزیشن‌هاش ۱۴ روز می‌مونه؛ استاپ ۳۰٪ قبل از خروجش می‌زنه" }; var sel = L.filter(function (r) { return SELF[r.addr.toLowerCase()]; }), rest = L.filter(function (r) { return !SELF[r.addr.toLowerCase()]; }); if (sel.length) L = sel.concat(rest);
+      var L = (T.list || []).filter(function (r) { return r.n >= T.min_n; }).slice(0, 10); var SELF = {}; ((DATA && DATA.wallets) || []).forEach(function (w) { if (w.group === "تریدر جدید") SELF[w.addr.toLowerCase()] = 1; }); var WHY = { d839: "پوزیشن‌هاش چند دقیقه‌ست؛ تأخیر ربات کل سودش رو می‌خوره و ۸ روزه فعال نیست", "6d6d": "اسکالپره (۱۶ دقیقه) و ۸ روزه فعال نیست", "0526": "میانگین برد فقط ۳$؛ سودش بی‌معنیه و از اکتبر فعال نیست", "107a": "یک باخت ۶۲ هزار دلاری داشته", e933: "روی بازارهای پیش‌بینی (#…) کار می‌کنه که کپی‌شدنی نیست", "4faf": "پوزیشن‌هاش ۱۴ روز می‌مونه؛ استاپ ۳۰٪ قبل از خروجش می‌زنه" }; ["a3b7", "1363", "f329"].forEach(function (k) { SELF[k] = 1; }); var isS = function (r) { return SELF[r.addr.toLowerCase()] || SELF[r.addr.slice(2, 6)]; }; var rest = L.filter(function (r) { return !isS(r); }); L = (T.list || []).filter(isS).sort(function (a, b) { return a.lossRate - b.lossRate; }); var REJ = rest;
       note.textContent = "بررسی‌شده: " + (T.checked || T.done) + " از " + T.pool + " تریدر (" + T.done + " تا پوزیشن فیوچرز داشتن) · آخرین به‌روزرسانی " + ago(T.updated) + ((T.checked || T.done) < T.pool ? " (ربات هنوز داره بقیه رو می‌خونه؛ رتبه‌ها عوض می‌شه)" : " · بررسی کامل شد");
       if (!L.length) { box.appendChild(el("p", "empty", "هنوز تریدری با حداقل " + T.min_n + " پوزیشن ثبت نشده؛ چند دقیقه دیگه نگاه کن.")); return; }
       L.forEach(function (r, i) {
         var c = el("article", "card"), r1 = el("div", "row"), a = el("a", "who", (i + 1) + ". " + r.addr.slice(0, 6) + "…" + r.addr.slice(-4)); a.href = "https://app.hyperliquid.xyz/explorer/" + r.addr; a.target = "_blank"; a.rel = "noopener"; r1.appendChild(a);
         var days = r.last ? Math.max(0, Math.round((Date.now() - Date.parse(r.last)) / 86400000)) : null;
         r1.appendChild(el("span", "when", days == null ? "" : (days === 0 ? "امروز فعال بوده" : days + " روز پیش آخرین فعالیت"))); c.appendChild(r1);
-        var isSel = SELF[r.addr.toLowerCase()], sp = el("div", "row"); sp.appendChild(el("span", "pill " + (isSel ? "good" : "bad"), isSel ? "✅ منتخب · کپی می‌شه · استاپ ۳۰٪ · " + (r.open || 0) + " پوزیشن باز الان" : "⛔ کپی نمی‌شه")); c.appendChild(sp); if (!isSel && WHY[r.addr.slice(2, 6)]) c.appendChild(el("p", "sub", "دلیل رد: " + WHY[r.addr.slice(2, 6)])); var lr = Math.round(r.lossRate * 100), h = el("div", "row"); h.appendChild(el("span", "pill " + (lr <= 10 ? "good" : lr <= 20 ? "mid" : "bad"), "درصد باخت: " + lr + "٪ (" + r.losses + " از " + r.n + " پوزیشن)")); c.appendChild(h);
+        var isSel = true, sp = el("div", "row"); sp.appendChild(el("span", "pill " + (isSel ? "good" : "bad"), isSel ? "✅ منتخب · کپی می‌شه · استاپ ۳۰٪ · " + (r.open || 0) + " پوزیشن باز الان" : "⛔ کپی نمی‌شه")); c.appendChild(sp); if (!isSel && WHY[r.addr.slice(2, 6)]) c.appendChild(el("p", "sub", "دلیل رد: " + WHY[r.addr.slice(2, 6)])); var lr = Math.round(r.lossRate * 100), h = el("div", "row"); h.appendChild(el("span", "pill " + (lr <= 10 ? "good" : lr <= 20 ? "mid" : "bad"), "درصد باخت: " + lr + "٪ (" + r.losses + " از " + r.n + " پوزیشن)")); c.appendChild(h);
         var st = el("div", "stats"); stat(st, "سود کل ۹۰ روز", (r.pnl >= 0 ? "+" : "-") + usd(r.pnl), r.pnl >= 0 ? "up" : "down"); stat(st, "میانگین برد", usd(r.avgWin)); stat(st, "میانگین باخت", usd(r.avgLoss)); c.appendChild(st);
         var hold = r.holdMs ? (r.holdMs < 3600000 ? Math.round(r.holdMs / 60000) + " دقیقه" : r.holdMs < 172800000 ? (r.holdMs / 3600000).toFixed(1) + " ساعت" : (r.holdMs / 86400000).toFixed(1) + " روز") : "?";
         var info = "میانگین نگه‌داشتن پوزیشن: " + hold + " · بزرگ‌ترین باخت " + usd(r.biggestLoss) + (r.liq ? " · " + r.liq + " تصفیه" : "") + (r.coins && r.coins.length ? " · بیشتر روی " + r.coins.map(function (x) { return x.c; }).join("، ") : "");
@@ -1013,6 +1013,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
         if (r.payoff && r.payoff < 0.25) c.appendChild(el("p", "ai", "حواست باشه: باخت‌هاش (میانگین " + usd(r.avgLoss) + ") چند برابر بردهاشه (میانگین " + usd(r.avgWin) + "). درصد باخت کمش از اینه که برد کوچیک می‌گیره و باخت بزرگ می‌ده؛ یک باخت می‌تونه چند ده برد رو پاک کنه."));
         box.appendChild(c);
       });
+      if (REJ.length) { var dt = el("details", "card"); dt.appendChild(el("summary", "", "⛔ ۷ نفر بقیه‌ی ۱۰ تا که حذف شدن")); REJ.forEach(function (r) { dt.appendChild(el("p", "sub", r.addr.slice(0, 6) + "…" + r.addr.slice(-4) + " · باخت " + Math.round(r.lossRate * 100) + "٪ · " + (WHY[r.addr.slice(2, 6)] || "")));}); box.appendChild(dt); }
     }).catch(function () { box.textContent = ""; note.textContent = ""; box.appendChild(el("p", "empty", "فایل تریدرها هنوز ساخته نشده؛ ربات تا چند دقیقه‌ی دیگه می‌سازدش.")); });
   }
   updateNet(); load(); pullLive(); loadTraders(); setInterval(loadTraders, 600000); setInterval(pullLive, 30000); setInterval(load, 60000); setInterval(function () { if (DATA) renderAll(); }, 30000);
