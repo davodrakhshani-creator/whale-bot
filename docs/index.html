@@ -577,7 +577,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     if (loadErr) { banner.hidden = false; txt.textContent = "تازه‌سازی صفحه خطا داد (" + loadErr + "). داده‌ی قبلی نشان داده می‌شه."; }
     else if (stale) { banner.hidden = false; txt.textContent = "ربات حدود " + ago(DATA.updated).replace(" پیش", "") + " است که چیزی ننوشته (معمولاً هر نیم ساعت حداقل یک‌بار می‌نویسه). احتمالاً اجرای GitHub متوقف شده؛ از تب Actions → whale-bot می‌شه دید و با Run workflow دوباره روشنش کرد."; }
     else banner.hidden = true;
-    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۲۳";
+    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۲۴";
   }
   function renderFeed(set, feedId, flt) {
     var all = [];
@@ -996,7 +996,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     getJson(nm).catch(function () { return getJson(RAW.replace("data.json", "traders.json") + "?t=" + Date.now()); }).then(function (T) {
       box.textContent = "";
       var L = (T.list || []).filter(function (r) { return r.n >= T.min_n; }).slice(0, 10);
-      note.textContent = "بررسی‌شده: " + T.done + " از " + T.pool + " تریدر · آخرین به‌روزرسانی " + ago(T.updated) + (T.done < T.pool ? " (ربات هنوز داره بقیه رو می‌خونه؛ رتبه‌ها عوض می‌شه)" : "");
+      note.textContent = "بررسی‌شده: " + (T.checked || T.done) + " از " + T.pool + " تریدر (" + T.done + " تا پوزیشن فیوچرز داشتن) · آخرین به‌روزرسانی " + ago(T.updated) + ((T.checked || T.done) < T.pool ? " (ربات هنوز داره بقیه رو می‌خونه؛ رتبه‌ها عوض می‌شه)" : " · بررسی کامل شد");
       if (!L.length) { box.appendChild(el("p", "empty", "هنوز تریدری با حداقل " + T.min_n + " پوزیشن ثبت نشده؛ چند دقیقه دیگه نگاه کن.")); return; }
       L.forEach(function (r, i) {
         var c = el("article", "card"), r1 = el("div", "row"), a = el("a", "who", (i + 1) + ". " + r.addr.slice(0, 6) + "…" + r.addr.slice(-4)); a.href = "https://app.hyperliquid.xyz/explorer/" + r.addr; a.target = "_blank"; a.rel = "noopener"; r1.appendChild(a);
