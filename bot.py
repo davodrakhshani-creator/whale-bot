@@ -11,6 +11,7 @@ DATA_F = os.path.join(ROOT, "docs", "data.json")
 CFG_F = os.path.join(ROOT, "config.json")
 SLIP, FEE = 0.0003, 0.00045
 PENDING_TTL = 30 * 60 * 1000
+ADD_GAP = 5 * 60 * 1000  # a new fill this long after our last step counts as a real add
 HEARTBEAT_S = 3600
 DATA_HEARTBEAT_S = 1800
 HIST_F = os.path.join(ROOT, "history.json")
@@ -147,11 +148,33 @@ def log_once(st, now, text):
         log(st, now, text)
 
 
-def open_paper(st, cfg, w, coin, side, avg_px, usd, now, marks):
+def open_paper(st, cfg, w, coin, side, avg_px, usd, now, marks, first=None):
     key = f"{w['addr']}|{coin}|{side}"
-    if key in st["open"]:
-        return
     S = cfg["settings"]
+    if key in st["open"]:
+        # same whale added to a coin+side we already copy: stack another step onto our position (weighted-average entry)
+        pos = st["open"][key]
+        if first is not None and first - pos.get("last_add", pos["opened_at"]) < ADD_GAP:
+            return  # trailing fragments of the order we already copied, not a new add
+        steps = pos.get("steps", 1)
+        if steps > S.get("max_adds", 3):
+            log_once(st, now, f"{w['tag']} باز هم به {coin} {'لانگ' if side == 'long' else 'شورت'} اضافه کرد ولی به سقف پله‌ها ({steps}) رسیدیم؛ پله‌ی جدید نداریم")
+            return
+        add_m = S["margin"] if not is_gold(coin) else S.get("gold_margin", 100)
+        if free_margin(st, marks) < add_m:
+            log(st, now, f"{w['tag']} به {coin} اضافه کرد ولی مارجین آزاد برای پله‌ی جدید کافی نبود")
+            return
+        base = marks.get(pos["coin"]) or avg_px
+        e2 = base * (1 + SLIP) if side == "long" else base * (1 - SLIP)
+        tot = pos["margin"] + add_m
+        pos["entry"] = (pos["entry"] * pos["margin"] + e2 * add_m) / tot
+        pos["margin"] = tot
+        pos["steps"] = steps + 1
+        pos["last_add"] = now
+        pos["whale_usd"] = pos.get("whale_usd", 0) + usd
+        st.setdefault("adds", {}).setdefault(key, []).append({"t": now, "px": e2, "m": add_m})
+        log(st, now, f"پله‌ی جدید: {w['tag']} به {pos['coin']} {'لانگ' if side == 'long' else 'شورت'} اضافه کرد (~${usd:,.0f}) ← ما هم {add_m:,.0f}$ اضافه کردیم؛ پله {pos['steps']}، مارجین کل {tot:,.0f}$، میانگین ورود {pos['entry']:.6g}")
+        return
     if key in st.setdefault("stopped", {}):
         return  # stopped out earlier; wait until the whale is flat before copying this coin+side again
     inst, margin, lev = coin, S["margin"], S["leverage"]
@@ -210,8 +233,49 @@ def close_paper(st, key, px, now, reason):
     st["balance"] += pnl
     st["closed"].append({**pos, "exit": ex, "pnl": pnl, "closed_at": now, "reason": reason})
     st["closed"] = st["closed"][-300:]
-    why = {"whale": "نهنگ بست", "liq": "تصفیه", "stop": "استاپ", "removed": "نهنگ از لیست حذف شد"}.get(reason, reason)
+    why = {"whale": "نهنگ بست", "liq": "تصفیه", "stop": "استاپ", "manual": "دستی؛ تو بستی", "removed": "نهنگ از لیست حذف شد"}.get(reason, reason)
     log(st, now, f"کپی مجازی بسته شد ({why}): {pos['tag']} {pos['coin']} {'لانگ' if pos['side'] == 'long' else 'شورت'} سود/زیان {pnl:+.2f}$")
+
+
+def apply_manual_closes(st, marks, now):
+    """Close requests made from the page: a GitHub issue titled 'CLOSE <key>|<opened_at>' created by the repo owner."""
+    repo, tok = os.environ.get("GITHUB_REPOSITORY"), os.environ.get("GH_TOKEN")
+    if not repo or not tok:
+        return
+    owner = repo.split("/")[0]
+    def gh(method, path, body=None):
+        req = urllib.request.Request("https://api.github.com" + path, method=method, data=(json.dumps(body).encode() if body is not None else None),
+                                     headers={"Authorization": "Bearer " + tok, "Accept": "application/vnd.github+json", "User-Agent": "whale-bot"})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            return json.loads(r.read() or "null")
+    try:
+        issues = gh("GET", f"/repos/{repo}/issues?state=open&creator={owner}&per_page=30")
+    except Exception as e:
+        print("issues failed", e, file=sys.stderr)
+        return
+    for it in issues or []:
+        t = (it.get("title") or "").strip()
+        if "pull_request" in it or not t.upper().startswith("CLOSE "):
+            continue
+        try:
+            key, opened = t[6:].strip().rsplit("|", 1)
+            opened = int(opened)
+        except Exception:
+            continue
+        p = st["open"].get(key)
+        note = "این پوزیشن روی سرور از قبل بسته بود."
+        if p and int(p["opened_at"]) == opened:
+            px = marks.get(p["coin"]) or p["entry"]
+            if key.count("|") >= 2:
+                st.setdefault("stopped", {})[key] = now  # do not re-copy until the whale is flat
+            close_paper(st, key, px, now, "manual")
+            st["dirty"] = True
+            note = "پوزیشن روی سرور بسته شد."
+        try:
+            gh("POST", f"/repos/{repo}/issues/{it['number']}/comments", {"body": note})
+            gh("PATCH", f"/repos/{repo}/issues/{it['number']}", {"state": "closed"})
+        except Exception as e:
+            print("issue close failed", e, file=sys.stderr)
 
 
 def process_wallet(st, cfg, w, fills, marks, now):
@@ -264,7 +328,7 @@ def process_wallet(st, cfg, w, fills, marks, now):
         pk = f"{addr}|{coin}|{side}"
         p = st["pending"].get(pk)
         if not p or t - p["last"] > PENDING_TTL:
-            p = {"usd": 0.0, "size": 0.0, "last": t}
+            p = {"usd": 0.0, "size": 0.0, "last": t, "first": t}
         p["usd"] += px * sz
         p["size"] += sz
         p["last"] = t
@@ -273,7 +337,7 @@ def process_wallet(st, cfg, w, fills, marks, now):
         p = st["pending"][pk]
         _, coin, side = pk.split("|")
         if p["usd"] >= w.get("min_usd", cfg["settings"]["min_usd"]):
-            open_paper(st, cfg, w, coin, side, p["usd"] / p["size"], p["usd"], p["last"], marks)
+            open_paper(st, cfg, w, coin, side, p["usd"] / p["size"], p["usd"], p["last"], marks, p.get("first", p["last"]))
             del st["pending"][pk]
         elif now - p["last"] > PENDING_TTL:
             del st["pending"][pk]
@@ -617,6 +681,10 @@ def main():
     for k in [k for k in st["open"] if k.split("|")[0] not in live]:  # wallet removed from config: close its paper copies at the current price
         p = st["open"][k]
         close_paper(st, k, marks.get(p["coin"]) or p["entry"], now, "removed")
+    try:
+        apply_manual_closes(st, marks, now)
+    except Exception as e:
+        print("manual close failed", e, file=sys.stderr)
     feeds, ords, fat, nfull = {}, {}, {}, 0
     oldw = {w["addr"]: w for w in (prev or {}).get("wallets", [])}
     for w in cfg["wallets"]:

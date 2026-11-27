@@ -119,6 +119,7 @@
       "provider": "auto",
       "model": "claude-sonnet-5-5",
       "daily_cap": 150
-    }
+    },
+    "max_adds": 3
   }
 }

@@ -396,8 +396,8 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
   function skipWhy(g) {
     var held = (DATA.open || []).some(function (p) { return p.tag === g.tag && (p.src || p.coin) === g.coin && p.side === sideOf(g.dir); });
     var mine = (DATA.open || []).filter(function (p) { return p.tag === g.tag && (p.src || p.coin) === g.coin && p.side === sideOf(g.dir); })[0];
-    if (held && isOpenDir(g.dir) && mine && BC[botId(mine)]) return "این پوزیشن رو خودت توی صفحه با «بستن با قیمت فعلی» بستی (فقط روی گوشی تو)؛ ولی سرور ربات هنوز بازش نگه داشته و دوباره کپی نمی‌شه تا نهنگ ببنده";
-    if (held && isOpenDir(g.dir)) return "ربات (سرور) همین پوزیشن را از قبل باز دارد؛ افزودنِ نهنگ دوباره کپی نمی‌شود";
+    if (held && isOpenDir(g.dir) && mine && BC[botId(mine)]) return "این پوزیشن رو خودت توی صفحه با «بستن با قیمت فعلی» بستی (فقط روی گوشی تو)؛ ولی درخواست بستنش هنوز به سرور نرسیده؛ دکمه‌ی «ثبت در گیت‌هاب» رو بزن";
+    if (held && isOpenDir(g.dir)) return "ربات این پوزیشن رو داره و نهنگ بهش اضافه کرده ← ربات خودش پله‌ی جدید اضافه می‌کنه (تا ۴ پله، هر پله $50)؛ اگه هنوز نیومده، چند دقیقه صبر کن";
     if (W[g.addr] && W[g.addr].w.group === "اسکلپ") return "اسکلپ‌ها فقط نمایشی‌اند؛ ربات کپی‌شان نمی‌کند";
     var ev = (DATA.events || []).filter(function (e) { return e.text.indexOf(g.tag + " باز کرد " + g.coin) === 0 && Math.abs(e.t - g.last) < 3600000; })[0];
     if (ev) return /سقف|جا یا/.test(ev.text) ? "ربات کپی نکرد: سقف پوزیشن باز پر بود" : "ربات کپی نکرد: موجودی آزاد کافی نبود";
@@ -512,7 +512,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
       c.appendChild(st);
       if (r.man || r.bot) {
         var acts = el("div", "acts"), b1 = el("button", "btn primary", "بستن با قیمت فعلی"); b1.type = "button"; b1.disabled = r.mark == null;
-        b1.addEventListener("click", function () { var px = marks[r.coin] && marks[r.coin].px; if (!px) return; if (r.man) closeManual(r.man, px); else closeBot(r.bot, px); }); acts.appendChild(b1);
+        b1.addEventListener("click", function () { var px = marks[r.coin] && marks[r.coin].px; if (!px) return; if (r.man) closeManual(r.man, px); else { closeBot(r.bot, px); try { window.open("https://github.com/davodrakhshani-creator/whale-bot/issues/new?title=" + encodeURIComponent("CLOSE " + r.bot.key + "|" + r.bot.opened_at) + "&body=" + encodeURIComponent("درخواست بستن؛ فقط Submit بزن"), "_blank"); } catch (e) {} } }); acts.appendChild(b1);
         var wc = r.man ? whaleClosedAfter(r.man) : null;
         if (wc) { var b2 = el("button", "btn", "بستن با قیمت نهنگ"); b2.type = "button"; b2.addEventListener("click", function () { closeManual(r.man, wc.px); }); acts.appendChild(b2); c.appendChild(el("span", "pill bad", "نهنگ با قیمت " + price(wc.px) + " بست")); }
         c.appendChild(acts);
@@ -581,7 +581,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     if (loadErr) { banner.hidden = false; txt.textContent = "تازه‌سازی صفحه خطا داد (" + loadErr + "). داده‌ی قبلی نشان داده می‌شه."; }
     else if (stale) { banner.hidden = false; txt.textContent = "ربات حدود " + ago(DATA.updated).replace(" پیش", "") + " است که چیزی ننوشته (معمولاً هر نیم ساعت حداقل یک‌بار می‌نویسه). احتمالاً اجرای GitHub متوقف شده؛ از تب Actions → whale-bot می‌شه دید و با Run workflow دوباره روشنش کرد."; }
     else banner.hidden = true;
-    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۳۱";
+    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۳۲";
   }
   function renderFeed(set, feedId, flt) {
     var all = [];
