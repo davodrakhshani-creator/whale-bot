@@ -1,5 +1,5 @@
 {
- "balance": 1090.7550172608537,
+ "balance": 1088.8079720766561,
  "open": {
   "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|PUMP|short": {
    "key": "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|PUMP|short",
@@ -317,21 +317,6 @@
    "lev": 5,
    "opened_at": 1795785163615,
    "whale_usd": 9507.39207,
-   "ai": null
-  },
-  "0x13639fb4a6ba5de085420b998493cc1b6911e5aa|ETH|long": {
-   "key": "0x13639fb4a6ba5de085420b998493cc1b6911e5aa|ETH|long",
-   "tag": "1363",
-   "group": "تریدر جدید",
-   "coin": "ETH",
-   "src": "ETH",
-   "side": "long",
-   "entry": 1669.250625,
-   "whale_px": 1664.4,
-   "margin": 50,
-   "lev": 5,
-   "opened_at": 1795791013666,
-   "whale_usd": 16644.0,
    "ai": null
   }
  },
@@ -1862,6 +1847,25 @@
    "pnl": 14.038841352431694,
    "closed_at": 1795809536477,
    "reason": "whale"
+  },
+  {
+   "key": "0x13639fb4a6ba5de085420b998493cc1b6911e5aa|ETH|long",
+   "tag": "1363",
+   "group": "تریدر جدید",
+   "coin": "ETH",
+   "src": "ETH",
+   "side": "long",
+   "entry": 1669.250625,
+   "whale_px": 1664.4,
+   "margin": 50,
+   "lev": 5,
+   "opened_at": 1795791013666,
+   "whale_usd": 16644.0,
+   "ai": null,
+   "exit": 1657.752525,
+   "pnl": -1.9470451841975192,
+   "closed_at": 1795819711225,
+   "reason": "manual"
   }
  ],
  "pending": {
@@ -1888,10 +1892,6 @@
   "0xf3297d354b7a8c594a54154c7dc03d924b6c87c9": 1795759280478
  },
  "events": [
-  {
-   "t": 1795619823342,
-   "text": "کپی مجازی باز شد: a70a xyz:SKHX شورت ورود 725.477 (حجم نهنگ ~$28,960)"
-  },
   {
    "t": 1795619823520,
    "text": "c191 باز کرد xyz:SP500 short (~$8,849) ولی مارجین آزاد کافی نبود (آزاد 31$، لازم 50$)"
@@ -2687,15 +2687,20 @@
   {
    "t": 1795809536477,
    "text": "کپی مجازی بسته شد (نهنگ بست): c6aa WLFI شورت سود/زیان +14.04$"
+  },
+  {
+   "t": 1795819711225,
+   "text": "کپی مجازی بسته شد (دستی؛ تو بستی): 1363 ETH لانگ سود/زیان -1.95$"
   }
  ],
- "data_ts": 1795818932841,
+ "data_ts": 1795819711225,
  "started": 1795416439329,
  "stopped": {
   "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|PURR|short": 1795641133627,
   "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9|xyz:SKHY|short": 1795652504247,
   "0x9aa589355bf745db9784c8ef3c646360f11b58af|xyz:SILVER|short": 1795744765496,
   "0x9aa589355bf745db9784c8ef3c646360f11b58af|xyz:SPCX|short": 1795750018791,
-  "0x9aa589355bf745db9784c8ef3c646360f11b58af|xyz:SKHX|short": 1795767340979
+  "0x9aa589355bf745db9784c8ef3c646360f11b58af|xyz:SKHX|short": 1795767340979,
+  "0x13639fb4a6ba5de085420b998493cc1b6911e5aa|ETH|long": 1795819711225
  }
 }
