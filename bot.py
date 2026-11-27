@@ -279,6 +279,45 @@ def apply_manual_closes(st, marks, now):
             print("issue close failed", e, file=sys.stderr)
 
 
+def apply_relay_closes(st, cfg, marks, now):
+    """One-tap close requests from the page: messages 'CLOSE <key>|<opened_at>' posted to a private ntfy.sh topic."""
+    topic = cfg["settings"].get("relay_topic")
+    if not topic:
+        return
+    try:
+        req = urllib.request.Request(f"https://ntfy.sh/{topic}/json?poll=1&since=12h", headers={"User-Agent": "whale-bot"})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            lines = r.read().decode().splitlines()
+    except Exception as e:
+        print("relay failed", e, file=sys.stderr)
+        return
+    done = st.setdefault("relay_done", [])
+    for ln in lines:
+        try:
+            m = json.loads(ln)
+        except Exception:
+            continue
+        if m.get("event") != "message" or m.get("id") in done:
+            continue
+        done.append(m["id"])
+        t = (m.get("message") or "").strip()
+        if not t.upper().startswith("CLOSE "):
+            continue
+        try:
+            key, opened = t[6:].strip().rsplit("|", 1)
+            opened = int(opened)
+        except Exception:
+            continue
+        p = st["open"].get(key)
+        if p and int(p["opened_at"]) == opened:
+            px = marks.get(p["coin"]) or p["entry"]
+            if key.count("|") >= 2:
+                st.setdefault("stopped", {})[key] = now
+            close_paper(st, key, px, now, "manual")
+            st["dirty"] = True
+    st["relay_done"] = done[-300:]
+
+
 def process_wallet(st, cfg, w, fills, marks, now):
     addr = w["addr"]
     last = st["last_seen"].get(addr)
@@ -683,6 +722,7 @@ def main():
         p = st["open"][k]
         close_paper(st, k, marks.get(p["coin"]) or p["entry"], now, "removed")
     try:
+        apply_relay_closes(st, cfg, marks, now)
         apply_manual_closes(st, marks, now)
     except Exception as e:
         print("manual close failed", e, file=sys.stderr)

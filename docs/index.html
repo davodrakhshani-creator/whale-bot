@@ -290,6 +290,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     return { pct: Math.round(100 * pr), lo: lo, hi: hi, basis: basis, n: n, lvl: pr < 0.3 ? "good" : pr < 0.5 ? "mid" : "bad" };
   }
   var TRM = {};
+  function relayClose(key, opened, btn) { var t = (DATA && DATA.settings && DATA.settings.relay_topic); if (!t) return; if (btn) { btn.disabled = true; btn.textContent = "در حال ارسال…"; } fetch("https://ntfy.sh/" + t, { method: "POST", body: "CLOSE " + key + "|" + opened }).then(function (r) { if (!r.ok) throw 0; if (btn) btn.textContent = "✅ فرستاده شد؛ تا ۱–۲ دقیقه دیگه روی سرور بسته می‌شه"; }).catch(function () { if (btn) { btn.disabled = false; btn.textContent = "ارسال نشد؛ دوباره بزن"; } }); }
   function trTag(row, addr) { var t = TRM[(addr || "").toLowerCase()]; if (!t) return; row.appendChild(el("span", "pill", "🆕 نیو تریدر")); row.appendChild(el("span", "pill " + (t.lossRate < 0.2 ? "good" : t.lossRate < 0.4 ? "mid" : "bad"), "باخت " + Math.round(100 * t.lossRate) + "٪ · برد " + Math.round(t.winRate) + "٪ · سود " + (t.pnl >= 0 ? "+$" : "-$") + Math.round(Math.abs(t.pnl)).toLocaleString("en") + " · " + t.n + " پوزیشن")); }
   function verdict(d, g) {
     var sc = d.score, side = sideOf(g.dir);
@@ -396,7 +397,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
   function skipWhy(g) {
     var held = (DATA.open || []).some(function (p) { return p.tag === g.tag && (p.src || p.coin) === g.coin && p.side === sideOf(g.dir); });
     var mine = (DATA.open || []).filter(function (p) { return p.tag === g.tag && (p.src || p.coin) === g.coin && p.side === sideOf(g.dir); })[0];
-    if (held && isOpenDir(g.dir) && mine && BC[botId(mine)]) return "این پوزیشن رو خودت توی صفحه با «بستن با قیمت فعلی» بستی (فقط روی گوشی تو)؛ ولی درخواست بستنش هنوز به سرور نرسیده؛ دکمه‌ی «ثبت در گیت‌هاب» رو بزن";
+    if (held && isOpenDir(g.dir) && mine && BC[botId(mine)]) return "این پوزیشن رو خودت توی صفحه با «بستن با قیمت فعلی» بستی (فقط روی گوشی تو)؛ ولی درخواست بستنش هنوز به سرور نرسیده؛ دکمه‌ی «بستن روی سرور» رو بزن";
     if (held && isOpenDir(g.dir)) return "ربات این پوزیشن رو داره و نهنگ بهش اضافه کرده ← ربات خودش پله‌ی جدید اضافه می‌کنه (تا ۴ پله، هر پله $50)؛ اگه هنوز نیومده، چند دقیقه صبر کن";
     if (W[g.addr] && W[g.addr].w.group === "اسکلپ") return "اسکلپ‌ها فقط نمایشی‌اند؛ ربات کپی‌شان نمی‌کند";
     var ev = (DATA.events || []).filter(function (e) { return e.text.indexOf(g.tag + " باز کرد " + g.coin) === 0 && Math.abs(e.t - g.last) < 3600000; })[0];
@@ -512,7 +513,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
       c.appendChild(st);
       if (r.man || r.bot) {
         var acts = el("div", "acts"), b1 = el("button", "btn primary", "بستن با قیمت فعلی"); b1.type = "button"; b1.disabled = r.mark == null;
-        b1.addEventListener("click", function () { var px = marks[r.coin] && marks[r.coin].px; if (!px) return; if (r.man) closeManual(r.man, px); else { closeBot(r.bot, px); try { window.open("https://github.com/davodrakhshani-creator/whale-bot/issues/new?title=" + encodeURIComponent("CLOSE " + r.bot.key + "|" + r.bot.opened_at) + "&body=" + encodeURIComponent("درخواست بستن؛ فقط Submit بزن"), "_blank"); } catch (e) {} } }); acts.appendChild(b1);
+        b1.addEventListener("click", function () { var px = marks[r.coin] && marks[r.coin].px; if (!px) return; if (r.man) closeManual(r.man, px); else { closeBot(r.bot, px); relayClose(r.bot.key, r.bot.opened_at); } }); acts.appendChild(b1);
         var wc = r.man ? whaleClosedAfter(r.man) : null;
         if (wc) { var b2 = el("button", "btn", "بستن با قیمت نهنگ"); b2.type = "button"; b2.addEventListener("click", function () { closeManual(r.man, wc.px); }); acts.appendChild(b2); c.appendChild(el("span", "pill bad", "نهنگ با قیمت " + price(wc.px) + " بست")); }
         c.appendChild(acts);
@@ -530,7 +531,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
       stat(st, "سود/زیان", sgn(r.pnl) + " (" + (r.pnl >= 0 ? "+" : "") + (100 * r.pnl / r.margin).toFixed(1) + "٪)", r.pnl >= 0 ? "up" : "down"); c.appendChild(st);
       var dd = W[r.addr], rk = dd ? riskOf(dd, { coin: r.src || r.coin, dir: r.side === "long" ? "Open Long" : "Open Short" }) : null;
       if (rk) { var rl = el("div", "row"); rl.appendChild(el("span", "pill " + (r.pnl < 0 ? "bad" : "good"), "این بار: " + (r.pnl < 0 ? "باخت" : "برد"))); rl.appendChild(el("span", "pill " + rk.lvl, "احتمال تاریخی باخت ≈ " + rk.pct + "٪ (بازه " + rk.lo + " تا " + rk.hi + "٪)")); c.appendChild(rl); c.appendChild(el("p", "sub", "مبنا: " + rk.basis + ". از سابقه‌ی همان نهنگ حساب شده، پیش‌بینی نیست.")); }
-      if (r.bcid) { var sp = (DATA.open || []).filter(function (p) { return botId(p) === r.bcid; })[0]; if (sp) { var srow = el("div", "row"); srow.appendChild(el("span", "pill bad", "⏳ روی سرور هنوز باز است")); var sa = el("a", "btn", "ثبت بستن در سرور (گیت‌هاب)"); sa.href = "https://github.com/davodrakhshani-creator/whale-bot/issues/new?title=" + encodeURIComponent("CLOSE " + sp.key + "|" + sp.opened_at) + "&body=" + encodeURIComponent("درخواست بستن؛ فقط Submit بزن"); sa.target = "_blank"; sa.rel = "noopener"; srow.appendChild(sa); c.appendChild(srow); } else c.appendChild(el("p", "sub", "✅ روی سرور هم بسته شد")); }
+      if (r.bcid) { var sp = (DATA.open || []).filter(function (p) { return botId(p) === r.bcid; })[0]; if (sp) { var srow = el("div", "row"); srow.appendChild(el("span", "pill bad", "⏳ روی سرور هنوز باز است")); var sa = el("button", "btn", "بستن روی سرور (یک لمس)"); sa.type = "button"; sa.addEventListener("click", function () { relayClose(sp.key, sp.opened_at, sa); }); srow.appendChild(sa); c.appendChild(srow); } else c.appendChild(el("p", "sub", "✅ روی سرور هم بسته شد")); }
       if (r.addr) { var cg2 = chartGroup(r), cb4 = el("button", "btn", "چارت نهنگ"); cb4.type = "button"; cb4.addEventListener("click", function () { openChart(cg2); }); c.appendChild(cb4); }
       cl.appendChild(c);
     });
@@ -582,7 +583,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     if (loadErr) { banner.hidden = false; txt.textContent = "تازه‌سازی صفحه خطا داد (" + loadErr + "). داده‌ی قبلی نشان داده می‌شه."; }
     else if (stale) { banner.hidden = false; txt.textContent = "ربات حدود " + ago(DATA.updated).replace(" پیش", "") + " است که چیزی ننوشته (معمولاً هر نیم ساعت حداقل یک‌بار می‌نویسه). احتمالاً اجرای GitHub متوقف شده؛ از تب Actions → whale-bot می‌شه دید و با Run workflow دوباره روشنش کرد."; }
     else banner.hidden = true;
-    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۳۴";
+    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۳۵";
   }
   function renderFeed(set, feedId, flt) {
     var all = [];

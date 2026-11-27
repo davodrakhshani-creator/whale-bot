@@ -121,6 +121,7 @@
       "daily_cap": 150
     },
     "max_adds": 3,
-    "new_trader_reserve": 150
+    "new_trader_reserve": 150,
+    "relay_topic": "wb-a234e11bd6f83bf99981"
   }
 }
