@@ -120,6 +120,7 @@
       "model": "claude-sonnet-5-5",
       "daily_cap": 150
     },
-    "max_adds": 3
+    "max_adds": 3,
+    "new_trader_reserve": 150
   }
 }

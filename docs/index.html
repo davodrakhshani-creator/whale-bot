@@ -340,7 +340,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
       d.top = Object.keys(d.coins).filter(function (k) { return /\|\*$/.test(k); }).map(function (k) { return d.coins[k]; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 4);
       d.orders = w.orders || []; d.groups.forEach(function (g) { g.addr = w.addr; if (!seen[g.id]) { seen[g.id] = true; if (!firstLoad) newAt[g.id] = Date.now(); } });
       W[w.addr] = d; WALLETS.push(w);
-      SETS[w.group === "نهنگ" ? "whale" : w.group === "طلا" ? "gold" : w.group === "اسکلپ" ? "scalp" : "hw"].push(w);
+      SETS[(w.group === "نهنگ" || w.group === "تریدر جدید") ? "whale" : w.group === "طلا" ? "gold" : w.group === "اسکلپ" ? "scalp" : "hw"].push(w);
     });
     firstLoad = false;
   }
@@ -582,7 +582,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     if (loadErr) { banner.hidden = false; txt.textContent = "تازه‌سازی صفحه خطا داد (" + loadErr + "). داده‌ی قبلی نشان داده می‌شه."; }
     else if (stale) { banner.hidden = false; txt.textContent = "ربات حدود " + ago(DATA.updated).replace(" پیش", "") + " است که چیزی ننوشته (معمولاً هر نیم ساعت حداقل یک‌بار می‌نویسه). احتمالاً اجرای GitHub متوقف شده؛ از تب Actions → whale-bot می‌شه دید و با Run workflow دوباره روشنش کرد."; }
     else banner.hidden = true;
-    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۳۳";
+    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۳۴";
   }
   function renderFeed(set, feedId, flt) {
     var all = [];

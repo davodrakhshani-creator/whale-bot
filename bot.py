@@ -161,7 +161,7 @@ def open_paper(st, cfg, w, coin, side, avg_px, usd, now, marks, first=None):
             log_once(st, now, f"{w['tag']} باز هم به {coin} {'لانگ' if side == 'long' else 'شورت'} اضافه کرد ولی به سقف پله‌ها ({steps}) رسیدیم؛ پله‌ی جدید نداریم")
             return
         add_m = S["margin"] if not is_gold(coin) else S.get("gold_margin", 100)
-        if free_margin(st, marks) < add_m:
+        if free_margin(st, marks) < add_m + (0 if w.get("group") == "تریدر جدید" else S.get("new_trader_reserve", 150)):
             log(st, now, f"{w['tag']} به {coin} اضافه کرد ولی مارجین آزاد برای پله‌ی جدید کافی نبود")
             return
         base = marks.get(pos["coin"]) or avg_px
@@ -190,8 +190,9 @@ def open_paper(st, cfg, w, coin, side, avg_px, usd, now, marks, first=None):
         log_once(st, now, f"{w['tag']} باز کرد {coin} {side} (~${usd:,.0f}) ولی سقف {S['wallet_cap']:.0%} مارجین برای هر نهنگ پر بود (الان {used_w:,.0f}$ از {eq:,.0f}$)")
         return
     avail = free_margin(st, marks)
-    if avail < margin:
-        log(st, now, f"{w['tag']} باز کرد {coin} {side} (~${usd:,.0f}) ولی مارجین آزاد کافی نبود (آزاد {avail:,.0f}$، لازم {margin:,.0f}$)")
+    reserve = 0 if w.get("group") == "تریدر جدید" else S.get("new_trader_reserve", 150)  # keep margin free so the new traders' positions can always be copied
+    if avail < margin + reserve:
+        log(st, now, f"{w['tag']} باز کرد {coin} {side} (~${usd:,.0f}) ولی مارجین آزاد کافی نبود (آزاد {avail:,.0f}$، لازم {margin:,.0f}$" + (f" + ذخیره‌ی تریدرهای جدید {reserve:,.0f}$" if reserve else "") + ")")
         return
     verdict = None
     try:
