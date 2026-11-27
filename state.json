@@ -1,5 +1,5 @@
 {
- "balance": 1101.7993141199495,
+ "balance": 1086.5040511582024,
  "open": {
   "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|PUMP|short": {
    "key": "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|PUMP|short",
@@ -65,20 +65,6 @@
    "lev": 5,
    "opened_at": 1795418249570,
    "whale_usd": 15361.610560000005
-  },
-  "0x9aa589355bf745db9784c8ef3c646360f11b58af|xyz:SPCX|short": {
-   "key": "0x9aa589355bf745db9784c8ef3c646360f11b58af|xyz:SPCX|short",
-   "tag": "9aa5",
-   "group": "نهنگ",
-   "coin": "xyz:SPCX",
-   "src": "xyz:SPCX",
-   "side": "short",
-   "entry": 125.622302,
-   "whale_px": 126.59788578134167,
-   "margin": 50,
-   "lev": 5,
-   "opened_at": 1795534013999,
-   "whale_usd": 32364.7495
   },
   "0x9aa589355bf745db9784c8ef3c646360f11b58af|xyz:MU|short": {
    "key": "0x9aa589355bf745db9784c8ef3c646360f11b58af|xyz:MU|short",
@@ -1564,6 +1550,24 @@
    "pnl": 8.389385800378784,
    "closed_at": 1795746917107,
    "reason": "whale"
+  },
+  {
+   "key": "0x9aa589355bf745db9784c8ef3c646360f11b58af|xyz:SPCX|short",
+   "tag": "9aa5",
+   "group": "نهنگ",
+   "coin": "xyz:SPCX",
+   "src": "xyz:SPCX",
+   "side": "short",
+   "entry": 125.622302,
+   "whale_px": 126.59788578134167,
+   "margin": 50,
+   "lev": 5,
+   "opened_at": 1795534013999,
+   "whale_usd": 32364.7495,
+   "exit": 133.1949465,
+   "pnl": -15.295262961746992,
+   "closed_at": 1795750018791,
+   "reason": "stop"
   }
  ],
  "pending": {
@@ -1575,8 +1579,8 @@
  },
  "last_seen": {
   "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75": 1795707358882,
-  "0xf382f419448b471da26225c4f849bb240be5578c": 1795749584671,
-  "0x9aa589355bf745db9784c8ef3c646360f11b58af": 1795749886115,
+  "0xf382f419448b471da26225c4f849bb240be5578c": 1795749945244,
+  "0x9aa589355bf745db9784c8ef3c646360f11b58af": 1795749972992,
   "0x9946e6adf95809a5fc9b7f6f9f887c98e0000852": 1795371179100,
   "0x541e077ac38c56d7bf590924d249c60b0c80071d": 1795620278952,
   "0x850ff4a5ea18d06b431ac984173395b6d00a435c": 1795371179100,
@@ -1587,10 +1591,6 @@
   "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37": 1795658730037
  },
  "events": [
-  {
-   "t": 1795613764308,
-   "text": "c191 باز کرد xyz:GOLD long (~$461,035) ولی مارجین آزاد کافی نبود (آزاد 35$، لازم 100$)"
-  },
   {
    "t": 1795615044699,
    "text": "کپی مجازی بسته شد (نهنگ بست): c191 BTC لانگ سود/زیان -3.09$"
@@ -2386,13 +2386,18 @@
   {
    "t": 1795747054702,
    "text": "کپی مجازی باز شد: f382 HYPE لانگ ورود 64.7609 (حجم نهنگ ~$22,662)"
+  },
+  {
+   "t": 1795750018791,
+   "text": "کپی مجازی بسته شد (استاپ): 9aa5 xyz:SPCX شورت سود/زیان -15.30$"
   }
  ],
- "data_ts": 1795749918130,
+ "data_ts": 1795750018791,
  "started": 1795416439329,
  "stopped": {
   "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|PURR|short": 1795641133627,
   "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9|xyz:SKHY|short": 1795652504247,
-  "0x9aa589355bf745db9784c8ef3c646360f11b58af|xyz:SILVER|short": 1795744765496
+  "0x9aa589355bf745db9784c8ef3c646360f11b58af|xyz:SILVER|short": 1795744765496,
+  "0x9aa589355bf745db9784c8ef3c646360f11b58af|xyz:SPCX|short": 1795750018791
  }
 }
