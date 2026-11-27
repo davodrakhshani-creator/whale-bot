@@ -726,6 +726,14 @@ def main():
         apply_manual_closes(st, marks, now)
     except Exception as e:
         print("manual close failed", e, file=sys.stderr)
+    cb = cfg["settings"].get("close_batch")
+    if cb and st.get("close_batch_done") != cb["id"]:  # one-shot: close every open copy except the listed keys
+        for k in [k for k in st["open"] if k not in cb["keep"]]:
+            p = st["open"][k]
+            st.setdefault("stopped", {})[k] = now
+            close_paper(st, k, marks.get(p["coin"]) or p["entry"], now, "manual")
+        st["close_batch_done"] = cb["id"]
+        st["dirty"] = True
     feeds, ords, fat, nfull = {}, {}, {}, 0
     oldw = {w["addr"]: w for w in (prev or {}).get("wallets", [])}
     for w in cfg["wallets"]:
