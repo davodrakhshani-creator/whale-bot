@@ -289,9 +289,11 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     var lo = Math.max(0, Math.round(100 * (pr - se) / 5) * 5), hi = Math.min(100, Math.round(100 * (pr + se) / 5) * 5);
     return { pct: Math.round(100 * pr), lo: lo, hi: hi, basis: basis, n: n, lvl: pr < 0.3 ? "good" : pr < 0.5 ? "mid" : "bad" };
   }
+  var TRM = {};
+  function trTag(row, addr) { var t = TRM[(addr || "").toLowerCase()]; if (!t) return; row.appendChild(el("span", "pill", "🆕 نیو تریدر")); row.appendChild(el("span", "pill " + (t.lossRate < 0.2 ? "good" : t.lossRate < 0.4 ? "mid" : "bad"), "باخت " + Math.round(100 * t.lossRate) + "٪ · برد " + Math.round(t.winRate) + "٪ · سود " + (t.pnl >= 0 ? "+$" : "-$") + Math.round(Math.abs(t.pnl)).toLocaleString("en") + " · " + t.n + " پوزیشن")); }
   function verdict(d, g) {
     var sc = d.score, side = sideOf(g.dir);
-    if (!sc) return { lvl: "mid", label: "سابقه در حال لود", why: "" };
+    if (!sc) return { lvl: "mid", label: d.noHist ? "سابقه‌ی بسته‌شده ندارد (۹۰ روز اخیر پوزیشن کامل‌شده نداشته)" : "سابقه در حال لود", why: d.noHist ? "این نهنگ پوزیشن‌هاش رو خیلی طولانی نگه می‌داره، پس درصد باخت/برد ازش در دسترس نیست." : "" };
     var lvl = lvlOf(sc.total), cs = side ? d.coins[g.coin + "|" + side] : null, why;
     var sideFa = side === "long" ? "لانگ" : "شورت";
     if (!d.lc0) why = "سابقه‌ی کوین‌ها هنوز نیومده.";
@@ -499,7 +501,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     var ol = $("p-open"); ol.textContent = "";
     if (!rowsO.length) ol.appendChild(el("p", "empty", "هنوز پوزیشنی باز نیست."));
     rowsO.forEach(function (r) {
-      var c = el("article", "card"), r1 = el("div", "row"); r1.appendChild(link(r.tag, addrOf(r)));
+      var c = el("article", "card"), r1 = el("div", "row"); r1.appendChild(link(r.tag, addrOf(r))); trTag(r1, addrOf(r));
       var wh = el("span", "when"); wh.appendChild(el("span", "num", clock(r.ts))); wh.appendChild(document.createTextNode(" · " + ago(r.ts))); r1.appendChild(wh); c.appendChild(r1);
       c.appendChild(head(r));
       var sg = srcGroup(r); if (sg) c.appendChild(el("p", "sub", "علت: نهنگ " + r.tag + " ساعت " + clock(sg.first) + " " + dirFa(sg.dir) + " (حجم " + usd(sg.usd) + ")")); if (r.bot || r.addr) { var cg = chartGroup(r), cb2 = el("button", "btn", "چارت نهنگ"); cb2.type = "button"; cb2.addEventListener("click", function () { openChart(cg); }); c.appendChild(cb2); }
@@ -519,7 +521,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     var cl = $("p-closed"); cl.textContent = "";
     if (!rowsC.length) cl.appendChild(el("p", "empty", "هنوز چیزی بسته نشده."));
     rowsC.slice(0, 40).forEach(function (r) {
-      var c = el("article", "card"), r1 = el("div", "row"); r1.appendChild(link(r.tag, addrOf(r)));
+      var c = el("article", "card"), r1 = el("div", "row"); r1.appendChild(link(r.tag, addrOf(r))); trTag(r1, addrOf(r));
       var wh = el("span", "when"); wh.appendChild(el("span", "num", clock(r.ts))); wh.appendChild(document.createTextNode(" · " + ago(r.ts))); r1.appendChild(wh); c.appendChild(r1);
       c.appendChild(head(r, el("span", "sub", r.why)));
       var st = el("div", "stats"); stat(st, "ورود", price(r.entry)); stat(st, "خروج", price(r.exit)); stat(st, "مارجین", money(r.margin));
@@ -577,7 +579,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     if (loadErr) { banner.hidden = false; txt.textContent = "تازه‌سازی صفحه خطا داد (" + loadErr + "). داده‌ی قبلی نشان داده می‌شه."; }
     else if (stale) { banner.hidden = false; txt.textContent = "ربات حدود " + ago(DATA.updated).replace(" پیش", "") + " است که چیزی ننوشته (معمولاً هر نیم ساعت حداقل یک‌بار می‌نویسه). احتمالاً اجرای GitHub متوقف شده؛ از تب Actions → whale-bot می‌شه دید و با Run workflow دوباره روشنش کرد."; }
     else banner.hidden = true;
-    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۲۵";
+    $("updated").textContent = "داده‌ی ربات: " + ago(DATA.updated) + " · نسخه‌ی صفحه ۲۶";
   }
   function renderFeed(set, feedId, flt) {
     var all = [];
@@ -590,7 +592,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
       var d = W[g.addr], isNew = newAt[g.id] && Date.now() - newAt[g.id] < 10 * 60000;
       var c = el("article", "card" + (isNew ? " new" : ""));
       var r1 = el("div", "row"), a = el("a", "who", g.tag + "…"); a.href = "https://app.hyperliquid.xyz/explorer/" + g.addr; a.target = "_blank"; a.rel = "noopener";
-      r1.appendChild(a); if (d.w && d.w.group && d.w.group !== "نهنگ") r1.appendChild(el("span", "pill", (d.w.group === "تریدر جدید" ? "🆕 " : "") + d.w.group));
+      r1.appendChild(a); if (d.w && d.w.group === "تریدر جدید") trTag(r1, d.w.addr); else if (d.w && d.w.group && d.w.group !== "نهنگ") r1.appendChild(el("span", "pill", d.w.group));
       var wh = el("span", "when"); wh.appendChild(el("span", "num", clock(g.last))); wh.appendChild(document.createTextNode(" · " + ago(g.last))); r1.appendChild(wh); c.appendChild(r1);
       var h = el("div", "head");
       h.appendChild(el("span", "side " + (g.side === "BUY" ? "buy" : "sell"), g.side === "BUY" ? "خرید" : "فروش"));
@@ -994,6 +996,7 @@ body { padding-top: max(14px, env(safe-area-inset-top, 0px)); margin: 0; }
     var box = $("tr-list"), note = $("tr-note"); if (!box) return;
     var nm = "traders.json?t=" + Date.now();
     getJson(nm).catch(function () { return getJson(RAW.replace("data.json", "traders.json") + "?t=" + Date.now()); }).then(function (T) {
+      (T.list || []).forEach(function (r) { TRM[r.addr.toLowerCase()] = r; }); try { renderAll(); } catch (e) {}
       box.textContent = "";
       var L = (T.list || []).filter(function (r) { return r.n >= T.min_n; }).slice(0, 10);
       note.textContent = "بررسی‌شده: " + (T.checked || T.done) + " از " + T.pool + " تریدر (" + T.done + " تا پوزیشن فیوچرز داشتن) · آخرین به‌روزرسانی " + ago(T.updated) + ((T.checked || T.done) < T.pool ? " (ربات هنوز داره بقیه رو می‌خونه؛ رتبه‌ها عوض می‌شه)" : " · بررسی کامل شد");
