@@ -1,5 +1,5 @@
 {
- "balance": 1243.0292456795514,
+ "balance": 1245.7903089800266,
  "open": {
   "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|ENA|short": {
    "key": "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|ENA|short",
@@ -62,21 +62,6 @@
    "ai": null,
    "steps": 4,
    "last_add": 1795849883595
-  },
-  "0xbd8a4f1170abd4fcb3422d60ea1d005eb2bddcf1|WLFI|short": {
-   "key": "0xbd8a4f1170abd4fcb3422d60ea1d005eb2bddcf1|WLFI|short",
-   "tag": "bd8a",
-   "group": "وین‌ریت",
-   "coin": "WLFI",
-   "src": "WLFI",
-   "side": "short",
-   "entry": 0.020652802300000002,
-   "whale_px": 0.020620219450000005,
-   "margin": 50,
-   "lev": 5,
-   "opened_at": 1795850592601,
-   "whale_usd": 3299.2351120000008,
-   "ai": null
   }
  },
  "closed": [
@@ -2031,6 +2016,25 @@
    "pnl": -8.253500719726805,
    "closed_at": 1795844790442,
    "reason": "whale"
+  },
+  {
+   "key": "0xbd8a4f1170abd4fcb3422d60ea1d005eb2bddcf1|WLFI|short",
+   "tag": "bd8a",
+   "group": "وین‌ریت",
+   "coin": "WLFI",
+   "src": "WLFI",
+   "side": "short",
+   "entry": 0.020652802300000002,
+   "whale_px": 0.020620219450000005,
+   "margin": 50,
+   "lev": 5,
+   "opened_at": 1795850592601,
+   "whale_usd": 3299.2351120000008,
+   "ai": null,
+   "exit": 0.02040612,
+   "pnl": 2.7610633004752345,
+   "closed_at": 1795850877297,
+   "reason": "manual"
   }
  ],
  "pending": {
@@ -2049,7 +2053,7 @@
   "0x850ff4a5ea18d06b431ac984173395b6d00a435c": 1795371179100,
   "0x34f09a89bdfbefb509b3e1c80891a750a22a1119": 1795371179100,
   "0x7256bdc5b2dce2600f79b1fd1469e80357936e98": 1795413632500,
-  "0xbd8a4f1170abd4fcb3422d60ea1d005eb2bddcf1": 1795850776299,
+  "0xbd8a4f1170abd4fcb3422d60ea1d005eb2bddcf1": 1795850872964,
   "0xa70ac79d24b8ea7dc8899d6c2df26488130b4be9": 1795658463052,
   "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37": 1795658730037,
   "0xa3b7226dea54ab25133e1e80fbf22adefa917ade": 1795759280478,
@@ -2057,14 +2061,6 @@
   "0xf3297d354b7a8c594a54154c7dc03d924b6c87c9": 1795759280478
  },
  "events": [
-  {
-   "t": 1795626422948,
-   "text": "کپی مجازی باز شد: c191 HYPE شورت ورود 58.9428 (حجم نهنگ ~$16,376)"
-  },
-  {
-   "t": 1795626482353,
-   "text": "کپی مجازی باز شد: c191 BTC شورت ورود 59144.8 (حجم نهنگ ~$69,633)"
-  },
   {
    "t": 1795626476789,
    "text": "کپی مجازی باز شد: c191 S شورت ورود 0.02664 (حجم نهنگ ~$4,234)"
@@ -2856,9 +2852,17 @@
   {
    "t": 1795850592601,
    "text": "کپی مجازی باز شد: bd8a WLFI شورت ورود 0.0206528 (حجم نهنگ ~$3,299)"
+  },
+  {
+   "t": 1795850877297,
+   "text": "کپی مجازی بسته شد (دستی؛ تو بستی): bd8a WLFI شورت سود/زیان +2.76$"
+  },
+  {
+   "t": 1795850872964,
+   "text": "bd8a باز کرد WLFI شورت (~$2,241) ولی این پوزیشن قبلاً بسته/استاپ شده بود؛ تا خروج کامل نهنگ دوباره کپی نمی‌شه"
   }
  ],
- "data_ts": 1795850778487,
+ "data_ts": 1795850877297,
  "started": 1795416439329,
  "stopped": {
   "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|PURR|short": 1795641133627,
@@ -2882,10 +2886,13 @@
   "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|AAVE|short": 1795820466781,
   "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|TRX|short": 1795820466781,
   "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|BTC|short": 1795820466781,
-  "0x9aa589355bf745db9784c8ef3c646360f11b58af|ZEC|short": 1795821399026
+  "0x9aa589355bf745db9784c8ef3c646360f11b58af|ZEC|short": 1795821399026,
+  "0xbd8a4f1170abd4fcb3422d60ea1d005eb2bddcf1|WLFI|short": 1795850877297
  },
  "relay_done": [
-  "C723A688wiCA"
+  "C723A688wiCA",
+  "d45RqSflWcNK",
+  "pnBoKo2tZTXv"
  ],
  "close_batch_done": "2026-11-28-b",
  "adds": {
