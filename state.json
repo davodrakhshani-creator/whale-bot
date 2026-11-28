@@ -1,24 +1,6 @@
 {
- "balance": 1237.963089751212,
- "open": {
-  "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|GRAM|short": {
-   "key": "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|GRAM|short",
-   "tag": "c6aa",
-   "group": "نهنگ",
-   "coin": "GRAM",
-   "src": "GRAM",
-   "side": "short",
-   "entry": 0.9683456591250001,
-   "whale_px": 0.9758795642135643,
-   "margin": 200,
-   "lev": 5,
-   "opened_at": 1795866901280,
-   "whale_usd": 19152.551760000002,
-   "ai": null,
-   "steps": 4,
-   "last_add": 1795871691680
-  }
- },
+ "balance": 1241.1230259815788,
+ "open": {},
  "closed": [
   {
    "key": "0xf382f419448b471da26225c4f849bb240be5578c|BTC|short",
@@ -2068,6 +2050,27 @@
    "pnl": -3.5390557789427772,
    "closed_at": 1795860575185,
    "reason": "whale"
+  },
+  {
+   "key": "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|GRAM|short",
+   "tag": "c6aa",
+   "group": "نهنگ",
+   "coin": "GRAM",
+   "src": "GRAM",
+   "side": "short",
+   "entry": 0.9683456591250001,
+   "whale_px": 0.9758795642135643,
+   "margin": 200,
+   "lev": 5,
+   "opened_at": 1795866901280,
+   "whale_usd": 19152.551760000002,
+   "ai": null,
+   "steps": 4,
+   "last_add": 1795871691680,
+   "exit": 0.9644142375,
+   "pnl": 3.159936230366951,
+   "closed_at": 1795872387936,
+   "reason": "manual"
   }
  ],
  "pending": {
@@ -2094,10 +2097,6 @@
   "0xf3297d354b7a8c594a54154c7dc03d924b6c87c9": 1795867935403
  },
  "events": [
-  {
-   "t": 1795628785039,
-   "text": "کپی مجازی بسته شد (نهنگ بست): c191 HYPE شورت سود/زیان -4.68$"
-  },
   {
    "t": 1795628785039,
    "text": "همگام‌سازی: c191 دیگر HYPE short ندارد؛ کپی مجازی بسته شد"
@@ -2893,9 +2892,13 @@
   {
    "t": 1795871691680,
    "text": "پله‌ی جدید: c6aa به GRAM شورت اضافه کرد (~$8,455) ← ما هم 50$ اضافه کردیم؛ پله 4، مارجین کل 200$، میانگین ورود 0.968346"
+  },
+  {
+   "t": 1795872387936,
+   "text": "کپی مجازی بسته شد (دستی؛ تو بستی): c6aa GRAM شورت سود/زیان +3.16$"
   }
  ],
- "data_ts": 1795871910113,
+ "data_ts": 1795872387936,
  "started": 1795416439329,
  "stopped": {
   "0xc1914d36f97dc5557e4df26cbdab98e9c988ef37|PURR|short": 1795641133627,
@@ -2921,7 +2924,8 @@
   "0x9aa589355bf745db9784c8ef3c646360f11b58af|ZEC|short": 1795821399026,
   "0xbd8a4f1170abd4fcb3422d60ea1d005eb2bddcf1|WLFI|short": 1795850877297,
   "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|ENA|short": 1795855354777,
-  "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|NEAR|short": 1795855354777
+  "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|NEAR|short": 1795855354777,
+  "0xc6aa7b1f1dbe24ca2f12c193b60eb05230270e75|GRAM|short": 1795872387936
  },
  "relay_done": [
   "C723A688wiCA",
@@ -2931,7 +2935,9 @@
   "Vin8vTqVh9Du",
   "MDVqrTyTdmNK",
   "XvepdyCLceKA",
-  "eptXtxXslCMh"
+  "eptXtxXslCMh",
+  "nHXUYW1vGYCL",
+  "nZqk7gWfv4AR"
  ],
  "close_batch_done": "2026-11-28-b",
  "adds": {
